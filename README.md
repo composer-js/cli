@@ -1,23 +1,24 @@
-# AcceleratXR Generator
+# Composer
+[![pipeline status](https://gitlab.com/AcceleratXR/composerjs/cli/badges/master/pipeline.svg)](https://gitlab.com/AcceleratXR/composerjs/cli/-/commits/master)
+[![coverage report](https://gitlab.com/AcceleratXR/composerjs/cli/badges/master/coverage.svg)](https://gitlab.com/AcceleratXR/composerjs/cli/-/commits/master)
 
-A command line utility that generates code or documentation from an OpenAPI specification.
+A command line utility that generates Composer based projects from an OpenAPI specification.
 
 ## Supported Languages & Platforms
 
-This tool can generate client, server projects and documentation for the following list of languages and platforms.
+This tool can generate client and server projects for the following list of languages and platforms.
 
 | Language            | Type   | Description                         |
 | ------------------- | ------ | ----------------------------------- |
 | C++                 | Client | C++ SDK library                     |
 | C#                  | Client | C# SDK library                      |
-| JavaScript / NodeJS | Server | Standalone NodeJS server            |
-| Markdown            | Client | SDK API Documentation               |
-| Markdown            | Server | OpenAPI Specification Documentation |
+| TypeScript          | Client | TypeScript/JavaScript SDK library   |
+| TypeScript / NodeJS | Server | Standalone NodeJS server            |
 
 # Usage
 
 ```
-Usage: axr-generator -i <input> -o <output> -l <language> -t <type>
+Usage: composer -i <input> -o <output> -l <language> -t <type>
 
                 -i --input      The input OpenAPI specification file to generate from.
                                 Accepts JSON or YAML formatted files. Specify this option multiple times to merge files.
@@ -25,10 +26,10 @@ Usage: axr-generator -i <input> -o <output> -l <language> -t <type>
                 -l --language   The desired output language to generate.
                                 Supported Languages:
                                         cpp
-                                        unreal
+                                        csharp
                                         nodejs
-                                        markdown
-                -t --type       The type of files to generate.
+                                        typescript
+                -t --type       The type of project to generate.
                                 Supported Types:
                                         client
                                         server
