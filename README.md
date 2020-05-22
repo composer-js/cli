@@ -8,12 +8,12 @@ A command line utility that generates Composer based projects from an OpenAPI sp
 
 This tool can generate client and server projects for the following list of languages and platforms.
 
-| Language            | Type   | Description                         |
-| ------------------- | ------ | ----------------------------------- |
-| C++                 | Client | C++ SDK library                     |
-| C#                  | Client | C# SDK library                      |
-| TypeScript          | Client | TypeScript/JavaScript SDK library   |
-| TypeScript / NodeJS | Server | Standalone NodeJS server            |
+| Language / Platform | Type     | Description                         |
+| ------------------- | ------   | ----------------------------------- |
+| `cpp` (C++)         | `client` | C++ SDK library                     |
+| `csharp` (C#)       | `client` | C# SDK library                      |
+| `typescript`        | `client` | TypeScript/JavaScript SDK library   |
+| `nodejs`            | `server` | Standalone NodeJS server            |
 
 # Usage
 
