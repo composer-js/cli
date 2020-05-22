@@ -1,0 +1,10 @@
+# This folder is cached between builds
+# http://docs.gitlab.com/ce/ci/yaml/README.html#cache
+publish:
+    only:
+        - tags
+    image: node:10
+    stage: deploy
+    script:
+        - yarn install
+        - npm publish

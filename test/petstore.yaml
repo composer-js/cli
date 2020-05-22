@@ -1,0 +1,511 @@
+openapi: 3.0.1
+info:
+    description: "This is a sample server Petstore server."
+    version: "1.0.0"
+    title: "Petstore"
+    termsOfService: "http://composerjs.io/"
+    contact:
+      email: "info@acceleratxr.com"
+    license:
+      name: "Apache 2.0"
+      url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+components:
+    x-datastores:
+        mongodb:
+            type: mongodb
+            url: mongodb://localhost
+    parameters:
+        jwt_token:
+            name: jwt_token
+            in: query
+            description: The JWT access token to use for user authentication.
+            required: false
+            schema:
+                type: string
+        limit:
+            name: limit
+            in: query
+            description: The maximum number of results to return. Cannot exceed 1000.
+            required: false
+            schema:
+                type: integer
+                format: int32
+        skip:
+            name: skip
+            in: query
+            description: "The page number, or offset, of the search results to search for and return."
+            required: false
+            schema:
+                type: integer
+                format: int32
+        sort:
+            name: sort
+            in: query
+            description: "A mapping of property to 1 or -1 that indicates the order to sort results by. 1 indicates ascending order, -1 descending."
+            required: false
+            schema:
+                type: string
+        petId:
+            name: petId
+            description: The unique identifier of the Pet.
+            in: path
+            required: true
+            schema:
+                type: string
+        id:
+            name: id
+            description: The unique identifier of the object.
+            in: path
+            required: true
+            schema:
+                type: string
+    schemas:
+        authToken:
+            type: object
+            properties:
+                token:
+                    type: string
+                    format: JWT
+        count:
+            type: object
+            properties:
+                count:
+                    type: integer
+                    format: int
+        Order:
+            type: "object"
+            x-baseClass: BaseMongoEntity
+            x-datastore: mongodb
+            properties:
+                id:
+                    type: "integer"
+                    format: "int64"
+                    x-identifier: true
+                    x-index: true
+                    x-unique: true
+                petId:
+                    type: "integer"
+                    format: "int64"
+                    x-index: true
+                quantity:
+                    type: "integer"
+                    format: "int32"
+                shipDate:
+                    type: "string"
+                    format: "date-time"
+                status:
+                    type: "string"
+                    description: "Order Status"
+                    enum:
+                    - "placed"
+                    - "approved"
+                    - "delivered"
+                complete:
+                    type: "boolean"
+                    default: false
+            xml:
+                name: "Order"
+        Category:
+            type: "object"
+            x-baseClass: BaseMongoEntity
+            x-datastore: mongodb
+            properties:
+                id:
+                    type: "integer"
+                    format: "int64"
+                    x-identifier: true
+                    x-index: true
+                    x-unique: true
+                name:
+                    type: "string"
+            xml:
+                name: "Category"
+        User:
+            type: "object"
+            x-baseClass: BaseMongoEntity
+            x-datastore: mongodb
+            properties:
+                id:
+                    type: "integer"
+                    format: "int64"
+                    x-identifier: true
+                    x-index: true
+                    x-unique: true
+                username:
+                    type: "string"
+                    x-identifier: true
+                    x-index: true
+                    x-unique: true
+                firstName:
+                    type: "string"
+                    nullable: true
+                lastName:
+                    type: "string"
+                    nullable: true
+                email:
+                    type: "string"
+                password:
+                    type: "string"
+                phone:
+                    type: "string"
+                    nullable: true
+                userStatus:
+                    type: "integer"
+                    format: "int32"
+                    description: "User Status"
+            xml:
+                name: "User"
+        Tag:
+            type: "object"
+            x-baseClass: BaseMongoEntity
+            x-datastore: mongodb
+            properties:
+                id:
+                    type: "integer"
+                    format: "int64"
+                    x-identifier: true
+                    x-index: true
+                    x-unique: true
+                name:
+                    type: "string"
+            xml:
+                name: "Tag"
+        Pet:
+            type: "object"
+            x-baseClass: BaseMongoEntity
+            x-datastore: mongodb
+            required:
+            - "name"
+            - "photoUrls"
+            properties:
+                id:
+                    type: "integer"
+                    format: "int64"
+                    x-identifier: true
+                    x-index: true
+                    x-unique: true
+                category:
+                    $ref: "#/components/schemas/Category"
+                    nullable: true
+                name:
+                    type: "string"
+                    example: "doggie"
+                    x-identifier: true
+                    x-index: true
+                    x-unique: true
+                photoUrls:
+                    type: "array"
+                    items:
+                        type: "string"
+                tags:
+                    type: "array"
+                    items:
+                        $ref: "#/components/schemas/Tag"
+                status:
+                    type: "string"
+                    description: "pet status in the store"
+                    enum:
+                    - "available"
+                    - "pending"
+                    - "sold"
+            xml:
+                name: "Pet"
+        ApiResponse:
+            type: "object"
+            properties:
+                code:
+                    type: "integer"
+                    format: "int32"
+                type:
+                    type: "string"
+                message:
+                    type: "string"
+    securitySchemes:
+        jwt:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+paths:
+    /pet:
+        x-schema: Pet
+        get:
+            description: "Multiple Pet objects"
+            x-name: "find"
+            responses:
+                "200":
+                    description: A list of Pet objects.
+                    content:
+                        application/json:
+                            schema:
+                                type: "array"
+                                items:
+                                    $ref: "#/components/schemas/Pet"
+        post:
+            description: "Add a new pet to the store"
+            x-name: "add"
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            description: "Pet object that needs to be added to the store"
+                            required: true
+                            $ref: "#/components/schemas/Pet"
+            responses:
+                "201":
+                    description: The newly created Pet.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Pet"
+            security:
+                - jwt: []
+        delete:
+            description: Removes all pets from the store.
+            x-name: truncate
+            responses:
+                "200":
+                    description: No content
+            security:
+                - jwt: []
+    /pet/{id}:
+        x-schema: Pet
+        parameters:
+            - $ref: "#/components/parameters/id"
+        get:
+            description: Returns a single Pet from the system that the user has access to
+            x-name: findById
+            responses:
+                "200":
+                    description: A Pet object.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Pet"
+        put:
+            description: Updates a single Pet
+            x-name: update
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Pet"
+            responses:
+                "200":
+                    description: The updated Pet object
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Pet"
+            security:
+                - jwt: []
+        delete:
+            description: Deletes the Pet
+            x-name: delete
+            responses:
+                "200":
+                    description: No content
+            security:
+                - jwt: []
+    /store/order:
+        x-schema: Order
+        get:
+            parameters:
+                - $ref: "#/components/parameters/limit"
+                - $ref: "#/components/parameters/skip"
+                - $ref: "#/components/parameters/sort"
+            description: Returns all Orders from the system that the user has access to
+            x-name: findAll
+            responses:
+                "200":
+                    description: A list of Orders.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/Order"
+            security:
+                - jwt: []
+        post:
+            description: Create a new Order.
+            x-name: create
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Order"
+            responses:
+                "201":
+                    description: The newly created Order.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Order"
+            security:
+                - jwt: []
+    /store/order/{id}:
+        x-schema: Order
+        parameters:
+            - $ref: "#/components/parameters/id"
+        get:
+            description: Returns a single Order from the system that the user has access to
+            x-name: findById
+            responses:
+                "200":
+                    description: A Order object.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Order"
+            security:
+                - jwt: []
+        put:
+            description: Updates a single Order
+            x-name: update
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Order"
+            responses:
+                "200":
+                    description: The updated Order object
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Order"
+            security:
+                - jwt: []
+        delete:
+            description: Deletes the Order
+            x-name: delete
+            responses:
+                "200":
+                    description: No content
+            security:
+                - jwt: []
+    /user:
+        x-schema: User
+        get:
+            parameters:
+                - $ref: "#/components/parameters/limit"
+                - $ref: "#/components/parameters/skip"
+                - $ref: "#/components/parameters/sort"
+            description: Returns all Users from the system that the User has access to
+            x-name: findAll
+            responses:
+                "200":
+                    description: A list of Users.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/User"
+            security:
+                - jwt: []
+        post:
+            description: Create a new User.
+            x-name: create
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/User"
+            responses:
+                "201":
+                    description: The newly created User.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/User"
+            security:
+                - jwt: []
+        delete:
+            description: Deletes all users from the service.
+            x-name: truncate
+            responses:
+                "200":
+                    description: No content
+            security:
+                - jwt: []
+    /user/{id}:
+        x-schema: User
+        parameters:
+            - $ref: "#/components/parameters/id"
+        get:
+            description: Returns a single User from the system that the user has access to
+            x-name: findById
+            responses:
+                "200":
+                    description: A User object.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/User"
+            security:
+                - jwt: []
+        put:
+            description: Updates a single User
+            x-name: update
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/User"
+            responses:
+                "200":
+                    description: The updated User object
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/User"
+            security:
+                - jwt: []
+        delete:
+            description: Deletes the User
+            x-name: delete
+            responses:
+                "204":
+                    description: No content
+            security:
+                - jwt: []
+    /user/count:
+        x-schema: User
+        get:
+            description: Returns the count of users based on the given criteria.
+            x-name: count
+            responses:
+                "200":
+                    description: The number of found users matching the search criteria.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/count"
+    /user/login:
+        x-name: Auth
+        get:
+            description: Authenticates the user using HTTP Basic and returns a JSON Web Token access token to be used with future API requests.
+            x-name: login
+            responses:
+                "200":
+                    description: The JSON Web Token to be used for all future requests.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/authToken"
+            security:
+                - basic: []
+    /user/logout:
+        x-name: Auth
+        get:
+            description: Logs out the current user
+            x-name: logout
+            responses:
+                "204":
+                    description: No content
+            security:
+                - jwt: []
+externalDocs:
+    description: "Find out more about Composer"
+    url: "https://composerjs.io"

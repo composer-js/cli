@@ -1,0 +1,116 @@
+{
+    "name": "@composer-js/cli",
+    "version": "1.0.0",
+    "description": "A command line utility that generates Composerjs style client and server application code from one or more OpenAPI specification files.",
+    "license": "MIT",
+    "author": "Jean-Philippe Steinmetz <info@acceleratxr.com>",
+    "repository": "https://gitlab.com/AcceleratXR/composerjs/composer.git",
+    "main": "dist/core.js",
+    "files": [
+        "dist",
+        "templates"
+    ],
+    "scripts": {
+        "lint": "tslint  --project tsconfig.json -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
+        "prebuild": "rimraf dist",
+        "build": "tsc && typedoc --out docs --target es6 --theme minimal --mode file src",
+        "test": "jest --coverage ./test",
+        "test:watch": "jest --coverage --watch",
+        "deploy-docs": "ts-node tools/gh-pages-publish",
+        "report-coverage": "cat ./coverage/lcov.info | coveralls",
+        "commit": "git-cz",
+        "semantic-release": "semantic-release",
+        "semantic-release-prepare": "ts-node tools/semantic-release-prepare",
+        "precommit": "lint-staged",
+        "postversion": "git push && git push --tags",
+        "run": "node dist/lib/cli.js"
+    },
+    "lint-staged": {
+        "{src,test}/**/*.ts": [
+            "prettier --write",
+            "git add"
+        ]
+    },
+    "config": {
+        "commitizen": {
+            "path": "node_modules/cz-conventional-changelog"
+        }
+    },
+    "jest": {
+        "transform": {
+            ".(ts|tsx)": "ts-jest"
+        },
+        "testEnvironment": "node",
+        "testRegex": "(/test/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+        "moduleFileExtensions": [
+            "ts",
+            "tsx",
+            "js"
+        ],
+        "coveragePathIgnorePatterns": [
+            "/node_modules/",
+            "/test/"
+        ],
+        "coverageThreshold": {
+            "global": {
+                "branches": 0,
+                "functions": 0,
+                "lines": 0,
+                "statements": 0
+            }
+        },
+        "collectCoverageFrom": [
+            "src/*.{js,ts}"
+        ]
+    },
+    "prettier": {
+        "printWidth": 120,
+        "semi": true,
+        "singleQuote": false,
+        "tabWidth": 4,
+        "trailingComma": "es5"
+    },
+    "commitlint": {
+        "extends": [
+            "@commitlint/config-conventional"
+        ]
+    },
+    "devDependencies": {
+        "@types/jest": "^25.2.3",
+        "@types/node": "^14.0.4",
+        "@types/rimraf": "^3.0.0",
+        "commitizen": "^4.0.3",
+        "dir-compare": "^2.3.0",
+        "jest": "^24.9.0",
+        "jest-config": "^24.9.0",
+        "semantic-release": "^17.0.7",
+        "ts-jest": "^26.0.0",
+        "ts-node": "^8.4.1",
+        "tslint": "^6.1.2",
+        "tslint-config-prettier": "^1.15.0",
+        "tslint-config-standard": "^9.0.0",
+        "typedoc": "^0.17.7",
+        "typescript": "^3.6.3"
+    },
+    "dependencies": {
+        "@composer-js/core": "^1.2.0",
+        "@types/command-line-args": "^5.0.0",
+        "@types/istextorbinary": "^2.3.0",
+        "@types/shelljs": "^0.8.8",
+        "@types/uuid": "^7.0.3",
+        "command-line-args": "^5.1.1",
+        "deepmerge": "^4.2.2",
+        "handlebars": "^4.7.6",
+        "handlebars-helpers": "^0.10.0",
+        "istextorbinary": "^4.3.0",
+        "mkdirp": "^1.0.4",
+        "nconf": "^0.10.0",
+        "shelljs": "^0.8.4",
+        "uuid": "^8.0.0",
+        "winston": "^3.1.0",
+        "yamljs": "^0.3.0"
+    },
+    "bin": {
+        "composer": "dist/lib/cli.js"
+    }
+}

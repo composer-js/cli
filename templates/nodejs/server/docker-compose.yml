@@ -1,0 +1,28 @@
+version: "2"
+services:
+    server:
+        build: .
+        command: ["node_modules/.bin/nodemon", "--inspect=0.0.0.0:9229", "dist/server.js"]
+        volumes:
+            - .:/app
+            - /app/node_modules
+        ports:
+            - "3000:3000"
+            - "9229:9229"
+        environment:
+            # Uncomment the following when enabling ACL support
+            #- datastores__acl__url=mongodb://mongodb:27017/as
+            # Uncomment the following when enabling cache support
+            #- datastores__cache__url=redis://redis:6379
+            # Uncomment the following when using mongodb
+            #- datastores__mongodb__url=mongodb://mongodb:27017/as
+            - NODE_ENV=dev
+        #links:
+        #    - mongodb
+        #    - redis
+# Uncomment when using mongodb
+#    mongodb:
+#        image: mongo
+# Uncomment when enabling cache support
+#    redis:
+#        image: redis
