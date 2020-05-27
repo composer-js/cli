@@ -86,9 +86,21 @@ abstract class BaseGenerator implements Generator {
      * Returns a default value for a given data type.
      *
      * @param {any} type The data type to return a default value for.
+     * @param {string} format The format of the type's data.
+     * @param {any | undefined} subtype The sub-type of the data. (e.g. the container value)
      * @return The default value for the specified type.
      */
-    protected abstract getDefaultValue(type: any): any;
+    protected abstract getDefaultValue(type: any, format: string, subtype?: any): any;
+
+    /**
+     * Returns an example value for a given data type.
+     *
+     * @param {any} type The data type to return a example value for.
+     * @param {string} format The format of the type's data.
+     * @param {any | undefined} subtype The sub-type of the data. (e.g. the container value)
+     * @return The example value for the specified type.
+     */
+    protected abstract getExampleValue(type: any, format: string, subtype?: any): any;
 
     /**
      * Generates a list of template variable definitions for each route defined in the given OpenAPI spec.
@@ -249,7 +261,8 @@ abstract class BaseGenerator implements Generator {
 
                 if (typeInfo) {
                     let memberVars: any = {};
-                    memberVars.defaultValue = memberDef.default ? memberDef.default : this.getDefaultValue(typeInfo.type);
+                    memberVars.defaultValue = memberDef.default ? memberDef.default : this.getDefaultValue(typeInfo.type, typeInfo.format, typeInfo.subType);
+                    memberVars.exampleValue = memberDef.example ? memberDef.example : this.getExampleValue(typeInfo.type, typeInfo.format, typeInfo.subType);
                     memberVars.description = memberDef.description;
                     memberVars.identifier = memberDef["x-identifier"];
                     memberVars.unique = memberDef["x-unique"];

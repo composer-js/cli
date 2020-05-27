@@ -1,7 +1,7 @@
 ﻿///////////////////////////////////////////////////////////////////////////////
 // Copyright (C) 2019 AcceleratXR, Inc. All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
-const { StringUtils } = require("@composer-js/core");
+import { StringUtils } from "@composer-js/core";
 import BaseGenerator from "../BaseGenerator";
 
 /**
@@ -71,7 +71,7 @@ export default class NodejsServerGenerator extends BaseGenerator {
         return result;
     }
 
-    protected getDefaultValue(type: any): any {
+    protected getDefaultValue(type: any, format: string, subtype?: any): any {
         let result: any = "";
 
         if (type.match("Array.*")) {
@@ -100,5 +100,9 @@ export default class NodejsServerGenerator extends BaseGenerator {
         }
 
         return result;
+    }
+
+    protected getExampleValue(type: any, format: string, subtype?: any): any {
+        return undefined;
     }
 };

@@ -27,5 +27,5 @@ publish:
     image: node:10
     stage: deploy
     script:
-        - yarn install
+        - yarn docs
         - npm publish
