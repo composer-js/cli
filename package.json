@@ -1,6 +1,6 @@
 {
     "name": "@composer-js/cli",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "A command line utility that generates Composerjs style client and server application code from one or more OpenAPI specification files.",
     "license": "MIT",
     "author": "Jean-Philippe Steinmetz <info@acceleratxr.com>",
@@ -14,7 +14,7 @@
         "lint": "tslint  --project tsconfig.json -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
         "prebuild": "rimraf dist",
         "build": "tsc",
-        "docs": "typedoc --out docs --target es6 --theme minimal --mode file src",
+        "docs": "typedoc --plugin typedoc-plugin-markdown --out docs --target esnext --mode file src",
         "test": "jest --coverage ./test",
         "test:watch": "jest --coverage --watch",
         "deploy-docs": "ts-node tools/gh-pages-publish",
@@ -97,6 +97,7 @@
         "tslint-config-prettier": "^1.15.0",
         "tslint-config-standard": "^9.0.0",
         "typedoc": "^0.17.7",
+        "typedoc-plugin-markdown": "^2.2.17",
         "typescript": "^3.6.3"
     },
     "dependencies": {
