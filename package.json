@@ -42,7 +42,13 @@
             ".(ts|tsx)": "ts-jest"
         },
         "testEnvironment": "node",
-        "testRegex": "(/test/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+        "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+        "testPathIgnorePatterns": [
+            "/node_modules/",
+            "/templates/",
+            "/test/nodejs_server_petstore/",
+            "/test/tmp/"
+        ],
         "moduleFileExtensions": [
             "ts",
             "tsx",
