@@ -1,6 +1,7 @@
 /bin
 /coverage
 /dist
+/docs
 /obj
 /.vs
 node_modules
