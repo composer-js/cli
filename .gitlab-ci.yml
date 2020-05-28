@@ -24,8 +24,8 @@ test:
 publish:
     only:
         - tags
-    image: node:10
+    image: node:12
     stage: deploy
     script:
         - yarn docs
-        - npm publish
+        - npm publish --access public
