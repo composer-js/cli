@@ -10,18 +10,23 @@ services:
             - "3000:3000"
             - "9229:9229"
         environment:
-            - datastores__acl__url=mongodb://mongodb:27017/as
-            - datastores__cache__url=redis://redis:6379
+            - datastores__acl__url=mongodb://acl/
+            - datastores__cache__url=redis://cache
         {{#each datastores}}
-            {{#if (eq this.type "mongodb")}}
-            - datastores__mongodb__url=mongodb://mongodb:27017
-            {{/if}}
+            - datastores__{{this.name}}__url={{this.type}}://{{this.name}}/
         {{/each}}
             - NODE_ENV=dev
         links:
-            - mongodb
-            - redis
-    mongodb:
+            - acl
+            - cache
+        {{#each datastores}}
+            - {{this.name}}
+        {{/each}}
+    acl:
         image: mongo
-    redis:
+    cache:
         image: redis
+{{#each datastores}}
+    {{this.name}}:
+        image: {{#if (eq this.type "mongodb")}}mongo{{else}}{{this.type}}{{/if}}
+{{/each}}
