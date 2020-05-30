@@ -93,7 +93,23 @@ const processcommandLine = async () =>{
         }
     
         // Make sure all required options have been set.
-        if (!cliOptions["input"] || !cliOptions["output"] || !cliOptions["language"] || !cliOptions["type"]) {
+        if (!cliOptions["input"]) {
+            console.error("Error: No input file specified.");
+            printHelp(langs, types);
+            process.exit(1);
+        }
+        if (!cliOptions["output"]) {
+            console.error("Error: No output directory specified.");
+            printHelp(langs, types);
+            process.exit(1);
+        }
+        if (!cliOptions["language"]) {
+            console.error("Error: No language specified.");
+            printHelp(langs, types);
+            process.exit(1);
+        }
+        if (!cliOptions["type"]) {
+            console.error("Error: No type specified.");
             printHelp(langs, types);
             process.exit(1);
         }
