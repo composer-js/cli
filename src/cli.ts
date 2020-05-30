@@ -1,5 +1,4 @@
-﻿//#!/usr/bin/env node
-///////////////////////////////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////////////////////////////
 // Copyright (C) 2018 AcceleratXR, Inc. All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
 import * as commandLineArgs from "command-line-args";
@@ -49,7 +48,7 @@ const cliOptions = commandLineArgs([
 ]);
 
 const logger = Logger(cliOptions["verbose"] ? "debug" : "info");
-const processcommandLine = async () =>{
+const processCommandLine = async () =>{
     try {
         const pwd: string = shelljs.pwd().toString();
 
@@ -159,4 +158,8 @@ const processcommandLine = async () =>{
     }
 }
 
-processcommandLine();
+export default processCommandLine;
+
+if (require.main === module) {
+    processCommandLine();
+}

@@ -120,6 +120,6 @@
         "yamljs": "^0.3.0"
     },
     "bin": {
-        "composer": "dist/cli.js"
+        "composer": "dist/cli.bin.js"
     }
 }

@@ -10,7 +10,7 @@ describe("NodejsServerGenerator Tests", () => {
     });
 
     afterAll(() => {
-        rimraf.sync(path.join(__dirname, "tmp"));
+        //rimraf.sync(path.join(__dirname, "tmp"));
     });
 
     it("Can generator project successfully.", async (done: Function) => {
