@@ -25,12 +25,10 @@ conf.defaults({
             useUnifiedTopology: true,
             synchronize: true,
         },
-        // Uncomment the following to enable 2nd level caching support.
-        // Only entity models with the @Cache decorator will be cached.
-        //cache: {
-        //    type: "redis",
-        //    url: "redis://localhost:6379",
-        //},
+        cache: {
+            type: "redis",
+            url: "redis://localhost:6379",
+        },
     {{#each datastores}}
         {{this.name}}: {
             type: "{{this.type}}",
@@ -39,6 +37,7 @@ conf.defaults({
             useNewUrlParser: true,
             useUnifiedTopology: true,
             synchronize: true,
+            entities: [{{#each ../schemas}}{{#if (eq this.datastore ../name) }}"{{this.Schema}}",{{/if}}{{/each}}]
         },
     {{/each}}
     },
