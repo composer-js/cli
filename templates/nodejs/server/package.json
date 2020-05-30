@@ -8,9 +8,6 @@
     "main": "dist/{{service_name}}.umd.js",
     "module": "dist/{{service_name}}.es5.js",
     "typings": "dist/types/{{service_name}}.d.ts",
-    "files": [
-        "dist"
-    ],
     "engines": {
         "node": ">=10.0.0"
     },
