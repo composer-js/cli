@@ -1,6 +1,6 @@
 {
     "name": "@composer-js/cli",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "A command line utility that generates Composerjs style client and server application code from one or more OpenAPI specification files.",
     "license": "MIT",
     "author": "Jean-Philippe Steinmetz <info@acceleratxr.com>",
