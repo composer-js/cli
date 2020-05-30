@@ -7,8 +7,8 @@
     "repository": "https://gitlab.com/AcceleratXR/composerjs/composer.git",
     "main": "dist/cli.js",
     "files": [
-        "dist",
-        "templates"
+        "dist/**",
+        "templates/**"
     ],
     "scripts": {
         "lint": "tslint  --project tsconfig.json -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
