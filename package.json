@@ -5,7 +5,7 @@
     "license": "MIT",
     "author": "Jean-Philippe Steinmetz <info@acceleratxr.com>",
     "repository": "https://gitlab.com/AcceleratXR/composerjs/composer.git",
-    "main": "dist/core.js",
+    "main": "dist/cli.js",
     "files": [
         "dist",
         "templates"
@@ -119,6 +119,6 @@
         "yamljs": "^0.3.0"
     },
     "bin": {
-        "composer": "dist/lib/cli.js"
+        "composer": "dist/cli.js"
     }
 }

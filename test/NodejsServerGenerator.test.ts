@@ -10,10 +10,10 @@ describe("NodejsServerGenerator Tests", () => {
     });
 
     afterAll(() => {
-        //rimraf.sync(path.join(__dirname, "tmp"));
+        rimraf.sync(path.join(__dirname, "tmp"));
     });
 
-    it("Can generator project successfully.", async () => {
+    it("Can generator project successfully.", async (done: Function) => {
         const apiSpec: any = await OASUtils.loadSpec(path.join(__dirname, "petstore.yaml"));
         expect(apiSpec).toBeDefined();
 
@@ -22,8 +22,12 @@ describe("NodejsServerGenerator Tests", () => {
         generator.init();
         await generator.generate(apiSpec, path.join(__dirname, "tmp"), []);
 
-        // Now scan the resulting directory to see if it matches our sample
-        const result: compare.Result = compare.compareSync(path.join(__dirname, "nodejs_server_petstore"), path.join(__dirname, "tmp"), { compareContent: true, excludeFilter: "**/*.md" });
-        expect(result.same).toBeTruthy();
+        // TODO Remove this delay once we figure out why the generator isn't completing after the wait
+        setTimeout(() => {
+            // Now scan the resulting directory to see if it matches our sample
+            const result: compare.Result = compare.compareSync(path.join(__dirname, "nodejs_server_petstore"), path.join(__dirname, "tmp"), { compareContent: true, excludeFilter: "**/*.md" });
+            expect(result.same).toBeTruthy();
+            done();
+        }, 1000);
     });
 });
