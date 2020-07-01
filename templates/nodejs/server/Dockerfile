@@ -20,5 +20,8 @@ EXPOSE 3000
 ENV PORT 3000
 ENV NODE_ENV production
 
+# Set a healthcheck to ensure the service is always alive
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl -f http://localhost:3000/ || exit 1
+
 # Run app.js when the container launches
 CMD ["node", "dist/server.js"]
