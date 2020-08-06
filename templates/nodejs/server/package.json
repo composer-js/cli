@@ -15,7 +15,7 @@
         "lint": "tslint  --project tsconfig.json -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
         "prebuild": "rimraf dist",
         "build": "tsc",
-        "docs": "typedoc --plugin typedoc-plugin-markdown --out docs/api --target esnext --theme minimal --mode file src",
+        "docs": "typedoc --options typedoc.json",
         "start": "node dist/server.js",
         "test": "jest --coverage",
         "test:watch": "jest --coverage --watch",
