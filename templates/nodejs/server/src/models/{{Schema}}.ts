@@ -2,7 +2,7 @@
 // Copyright (C) {{year}} {{{copyright}}}
 ///////////////////////////////////////////////////////////////////////////////
 import { Column, Entity, Index, Unique } from "typeorm";
-import { {{#if baseClass}}{{baseClass}}, {{/if}}Cache, Identifier } from "@composer-js/service-core";
+import { {{#if baseClass}}{{baseClass}}, {{/if}}{{#if cached}}Cache, {{/if}}Identifier{{#if trackChanges}}, TrackChanges{{/if}} } from "@composer-js/service-core";
 {{#each dependencies}}
 import {{this}} from "./{{this}}";
 {{/each}}
@@ -14,7 +14,7 @@ import {{this}} from "./{{this}}";
  */
 export enum {{{Schema}}}{{{this.Name}}} {
 {{#each this.values}}
-    {{this}},
+    {{this}} = "{{this}}",
 {{/each}}
 }
 {{/if}}
@@ -26,7 +26,8 @@ export enum {{{Schema}}}{{{this.Name}}} {
  * @author {{{author}}}
  */
 @Entity()
-@Cache()
+{{#if cached}}@Cache({{#if (not cached true)}}{{cached}}{{/if}}){{/if}}
+{{#if trackChanges}}@TrackChanges({{#if (not trackChanges true)}}{{trackChanges}}{{/if}}){{/if}}
 {{#unless isNone}}
 @Unique(["uid"{{#each members}}{{#if this.identifier}}, "{{{this.name}}}"{{/if}}{{/each}}])
 {{/unless}}

@@ -35,15 +35,11 @@ Routes
 Authentication: {{#if security}}**Required**{{else}}Optional{{/if}}
 
 {{{description}}}
-{{#each params}}
-
 Parameters
 ^^^^^^^^^^
-====
-Name
-====
+{{#each params}}
+* Name
 {{{this}}}
-====
 {{/each}}
 {{#if hasQuery}}
 

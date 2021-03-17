@@ -2,7 +2,16 @@
 // Copyright (C) 2020 <COPYRIGHT>
 ///////////////////////////////////////////////////////////////////////////////
 import { Column, Entity, Index, Unique } from "typeorm";
-import { BaseMongoEntity, Cache, Identifier } from "@composer-js/service-core";
+import { BaseMongoEntity, Identifier } from "@composer-js/service-core";
+
+/**
+ * Order Status
+ */
+export enum Status {
+    PLACED = "PLACED",
+    APPROVED = "APPROVED",
+    DELIVERED = "DELIVERED",
+}
 
 /**
  * 
@@ -10,7 +19,8 @@ import { BaseMongoEntity, Cache, Identifier } from "@composer-js/service-core";
  * @author <AUTHOR>
  */
 @Entity()
-@Cache()
+
+
 @Unique(["uid", "id"])
 export default class Order extends BaseMongoEntity {
     /**
@@ -43,7 +53,7 @@ export default class Order extends BaseMongoEntity {
      * Order Status
      */
     @Column()
-    public status: string = "";
+    public status: Status = Status.new Enum();
 
     /**
      * 

@@ -94,12 +94,12 @@ components:
                     type: "string"
                     format: "date-time"
                 status:
-                    type: "string"
                     description: "Order Status"
                     enum:
-                    - "placed"
-                    - "approved"
-                    - "delivered"
+                        - PLACED
+                        - APPROVED
+                        - DELIVERED
+                    default: PLACED
                 complete:
                     type: "boolean"
                     default: false
@@ -108,6 +108,7 @@ components:
         Category:
             type: "object"
             x-baseClass: BaseMongoEntity
+            x-cached: true
             x-datastore: mongodb
             properties:
                 id:
@@ -123,6 +124,7 @@ components:
         User:
             type: "object"
             x-baseClass: BaseMongoEntity
+            x-cached: true
             x-datastore: mongodb
             properties:
                 id:
@@ -158,6 +160,7 @@ components:
         Tag:
             type: "object"
             x-baseClass: BaseMongoEntity
+            x-cached: true
             x-datastore: mongodb
             properties:
                 id:
@@ -173,7 +176,9 @@ components:
         Pet:
             type: "object"
             x-baseClass: BaseMongoEntity
+            x-cached: true
             x-datastore: mongodb
+            x-versioned: true
             required:
             - "name"
             - "photoUrls"
@@ -482,6 +487,17 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/count"
+    /user/connect:
+        x-name: Connect
+        get:
+            description: Establishes a WebSocket connection to the store.
+            x-name: connect
+            x-upgrade: true
+            responses:
+                "204":
+                    description: No Content
+            security:
+                - jwt: []
     /user/login:
         x-name: Auth
         get:

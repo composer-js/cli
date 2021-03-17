@@ -147,6 +147,12 @@ abstract class BaseGenerator implements Generator {
 
                 let route = def[method];
 
+                // If 'x-upgrade' is set then the method is overridden to WebSocket.
+                if (route["x-upgrade"])
+                {
+                    method = "WebSocket";
+                }
+
                 // Add the method to our global list
                 let Method: string = StringUtils.toPascalCase(method);
                 if (!result[name].methods.includes(Method)) {
@@ -311,11 +317,14 @@ abstract class BaseGenerator implements Generator {
                 let schemaVars: any = {};
                 const baseClass: string | undefined = schema["x-baseClass"] ? StringUtils.toPascalCase(schema["x-baseClass"]) : undefined;
                 schemaVars.baseClass = baseClass;
+                schemaVars.cached = schema["x-cached"];
                 schemaVars.datastore = schema["x-datastore"];
                 schemaVars.description = schema.description;
                 schemaVars.Schema = StringUtils.toPascalCase(schemaName);
                 schemaVars.schema = StringUtils.toCamelCase(schemaName);
                 schemaVars.SCHEMA = schemaName.toLocaleUpperCase();
+                schemaVars.requiredMembers = schema["required"];
+                schemaVars.trackChanges = schema["x-versioned"];
                 schemaVars.members = this.generateSchemaMembers(spec, schemaName);
                 schemaVars.dependencies = this.getSchemaDependencies(spec, schemaName);
 

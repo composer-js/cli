@@ -1,6 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright (C) {{year}} {{{copyright}}}
 ///////////////////////////////////////////////////////////////////////////////
+import { rootCertificates } from "tls"
 import {
     AccessControlList,
     ACLRecord,
@@ -99,7 +100,13 @@ class {{{Route}}}Route {{#if hasModel}}extends ModelRoute<{{{Schema}}}> {{/if}}{
      * @throws When the request payload contains invalid input or data.
      */
     private validate(data: {{#if hasModel}}{{{Schema}}}{{else}}any{{/if}}): void {
-        // TODO Validate input data
+        {{#each (lookup (lookup @root.schemas Schema) requiredMembers)}}
+        if (data["{{this}}"] === undefined) {
+            const err: any = new Error("The required property `{{this}}` is missing.");
+            err.status = 400;
+            throw err;
+        }
+        {{/each}}
     }
 
 {{#each routes}}

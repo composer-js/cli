@@ -14,3 +14,13 @@ Repository: ``git clone {{repository}}.git``
    :caption: REST API Reference
 
    restapi/index
+
+.. toctree::
+   :caption: Project Info
+
+   reference/README
+   
+.. toctree::
+   :caption: API Reference
+   
+   reference/globals
