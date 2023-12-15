@@ -90,7 +90,7 @@ const processCommandLine = async () =>{
             printHelp(langs, types);
             process.exit(0);
         }
-    
+
         // Make sure all required options have been set.
         if (!cliOptions["input"]) {
             console.error("Error: No input file specified.");
@@ -112,7 +112,7 @@ const processCommandLine = async () =>{
             printHelp(langs, types);
             process.exit(1);
         }
-    
+
         // Validate the selected language
         if (!langs.includes(cliOptions["language"])) {
             console.error("Error: Unsupported language specified: " + cliOptions["language"]);
@@ -123,7 +123,7 @@ const processCommandLine = async () =>{
             }
             process.exit(1);
         }
-    
+
         // Validate the selected type
         if (!types.includes(cliOptions["type"])) {
             console.error("Error: Unsupported type specified: " + cliOptions["type"]);
@@ -134,7 +134,7 @@ const processCommandLine = async () =>{
             }
             process.exit(1);
         }
-    
+
         // Load all OpenAPI specifications into one document
         let apiSpec = {};
         for (const spec of cliOptions["input"]) {

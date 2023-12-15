@@ -26,19 +26,19 @@ abstract class BaseGenerator implements Generator {
 
     public init(): void {
         handlebars.registerHelper(require('handlebars-helpers')());
-        
+
         this.TemplatePath = path.resolve(path.join(__dirname, "..", "templates", this.language, this.type));
-        
+
         if (!fs.existsSync(this.TemplatePath)) {
             throw new Error("No template files exist at path: " + this.TemplatePath);
         }
     }
 
     /**
-     * 
-     * @param type 
-     * @param format 
-     * @param name 
+     *
+     * @param type
+     * @param format
+     * @param name
      */
     protected abstract convertDataType(type: string, format: string, name: string): string | undefined;
 
@@ -59,8 +59,8 @@ abstract class BaseGenerator implements Generator {
 
         result.license = spec.info.license ? spec.info.license.url : undefined;
         result.service_description = spec.info.description;
-        result.service_name = spec.info.title.toLowerCase().replace(new RegExp(/ /, "gi"), "_");
-        result.service_title = spec.info.title;
+        result.service_title = spec.info.title || "DefaultService";
+        result.service_name = result.service_title.toLowerCase().replace(new RegExp(/ /, "gi"), "_");
         result.service_version = spec.info.version;
 
         result.datastores = {};
@@ -104,7 +104,7 @@ abstract class BaseGenerator implements Generator {
 
     /**
      * Generates a list of template variable definitions for each route defined in the given OpenAPI spec.
-     * 
+     *
      * @param spec The OpenAPI spec to generate routes from.
      */
     protected generateRoutes(spec: any): any[] {
@@ -233,7 +233,7 @@ abstract class BaseGenerator implements Generator {
 
     /**
      * Generates a list of template variable definitions for each member of the schema with the specified name.
-     * 
+     *
      * @param {object} spec The OpenAPI specification to reference.
      * @param {string} schemaName The name of the schema to generate members from.
      * @returns {any[]} A list of all members and their associated template replacement values.
@@ -346,7 +346,7 @@ abstract class BaseGenerator implements Generator {
      */
     protected getSchemaDependencies(spec: any, schemaName: string, bIncludeSelf: boolean = false): string[] {
         let result: string[] = [];
-        
+
         let schema: any = OASUtils.getSchema(spec, schemaName);
         if (schema) {
             // Add our self to the list
@@ -387,7 +387,7 @@ abstract class BaseGenerator implements Generator {
 
     /**
      * Processes a single file for code generation or copying.
-     * 
+     *
      * @param srcPath The path to the source file to process.
      * @param destPath The path to write the processed file contents to.
      * @param vars The template variables to use during file processing.
@@ -423,7 +423,7 @@ abstract class BaseGenerator implements Generator {
     /**
      * Processes a directory, iterating through each file in the subtree and either performing code generation or file
      * copying.
-     * 
+     *
      * @param srcPath The source directory path to process.
      * @param destPath The destination directory to write all contents to.
      * @param vars The template variables to use when processing files.
@@ -463,7 +463,7 @@ abstract class BaseGenerator implements Generator {
     /**
      * Processes a single template at the given `templatePath` using the specified template variables and
      * writing the result to `destPath`.
-     * 
+     *
      * @param templatePath The path to the template file to process.
      * @param destPath The path to write the processed file contents to.
      * @param vars The template variables to use during file processing.
@@ -473,7 +473,7 @@ abstract class BaseGenerator implements Generator {
         if (srcFile) {
             const finalDestPath: string = StringUtils.findAndReplace(destPath, vars);
             const template: any = handlebars.compile(srcFile);
-            
+
             // Now write the final output to the destination
             let output = template(vars);
             await FileUtils.writeFile(templatePath, finalDestPath, output, true);
@@ -486,7 +486,7 @@ abstract class BaseGenerator implements Generator {
      * Generates all code and files for the given OpenAPI specification writing the contents to the given output path
      * for the configured language and application type. Also copies any files listed in `addtlFiles` to the
      * destination.
-     * 
+     *
      * @param apiSpec The OpenAPI specification file to generate code for.
      * @param outputPath The output direction to write all generated contents to.
      * @param addtlFiles The list of additional file paths to copy to the destination.
