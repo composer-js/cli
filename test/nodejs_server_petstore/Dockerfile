@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM node:12
+FROM node:lts-buster
 
 # Set the working directory to /app
 WORKDIR /app

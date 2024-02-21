@@ -11,9 +11,12 @@ info:
       url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 components:
     x-datastores:
-        mongodb:
+        static:
             type: mongodb
-            url: mongodb://localhost
+            database: "petstore_static"
+        user:
+            type: mongodb
+            database: "petstore_user"
     parameters:
         jwt_token:
             name: jwt_token
@@ -59,6 +62,13 @@ components:
             required: true
             schema:
                 type: string
+        propertyName:
+            name: propertyName
+            description: The name of the property of the object.
+            in: path
+            required: true
+            schema:
+                type: string
     schemas:
         authToken:
             type: object
@@ -66,16 +76,10 @@ components:
                 token:
                     type: string
                     format: JWT
-        count:
-            type: object
-            properties:
-                count:
-                    type: integer
-                    format: int
         Order:
             type: "object"
             x-baseClass: BaseMongoEntity
-            x-datastore: mongodb
+            x-datastore: user
             properties:
                 id:
                     type: "integer"
@@ -109,7 +113,7 @@ components:
             type: "object"
             x-baseClass: BaseMongoEntity
             x-cached: true
-            x-datastore: mongodb
+            x-datastore: static
             properties:
                 id:
                     type: "integer"
@@ -125,7 +129,7 @@ components:
             type: "object"
             x-baseClass: BaseMongoEntity
             x-cached: true
-            x-datastore: mongodb
+            x-datastore: user
             properties:
                 id:
                     type: "integer"
@@ -161,7 +165,7 @@ components:
             type: "object"
             x-baseClass: BaseMongoEntity
             x-cached: true
-            x-datastore: mongodb
+            x-datastore: static
             properties:
                 id:
                     type: "integer"
@@ -177,7 +181,7 @@ components:
             type: "object"
             x-baseClass: BaseMongoEntity
             x-cached: true
-            x-datastore: mongodb
+            x-datastore: static
             x-versioned: true
             required:
             - "name"
@@ -247,7 +251,7 @@ paths:
                                     $ref: "#/components/schemas/Pet"
         post:
             description: "Add a new pet to the store"
-            x-name: "add"
+            x-name: create
             requestBody:
                 content:
                     application/json:
@@ -262,6 +266,28 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/Pet"
+            security:
+                - jwt: []
+        put:
+            description: "Updates multiple Pet objects"
+            x-name: updateBulk
+            requestBody:
+                description: A list of Pet objects.
+                content:
+                    application/json:
+                        schema:
+                            type: "array"
+                            items:
+                                $ref: "#/components/schemas/Pet"
+            responses:
+                "200":
+                    description: A list of modified Pet objects.
+                    content:
+                        application/json:
+                            schema:
+                                type: "array"
+                                items:
+                                    $ref: "#/components/schemas/Pet"
             security:
                 - jwt: []
         delete:
@@ -309,6 +335,28 @@ paths:
             responses:
                 "200":
                     description: No content
+            security:
+                - jwt: []
+    /pet/{id}/{propertyName}:
+        x-schema: Pet
+        parameters:
+            - $ref: "#/components/parameters/id"
+            - $ref: "#/components/parameters/propertyName"
+        put:
+            description: Updates a single property of a Pet object
+            x-name: updateProperty
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+            responses:
+                "200":
+                    description: The updated Pet object
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Pet"
             security:
                 - jwt: []
     /store/order:
@@ -391,6 +439,12 @@ paths:
                 - jwt: []
     /user:
         x-schema: User
+        head:
+            description: Returns the count of users based on the given criteria.
+            x-name: count
+            responses:
+                "200":
+                    description: No content
         get:
             parameters:
                 - $ref: "#/components/parameters/limit"
@@ -424,6 +478,28 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/User"
+            security:
+                - jwt: []
+        put:
+            description: "Updates multiple User objects"
+            x-name: updateBulk
+            requestBody:
+                description: A list of User objects.
+                content:
+                    application/json:
+                        schema:
+                            type: "array"
+                            items:
+                                $ref: "#/components/schemas/User"
+            responses:
+                "200":
+                    description: A list of modified User objects.
+                    content:
+                        application/json:
+                            schema:
+                                type: "array"
+                                items:
+                                    $ref: "#/components/schemas/User"
             security:
                 - jwt: []
         delete:
@@ -475,18 +551,28 @@ paths:
                     description: No content
             security:
                 - jwt: []
-    /user/count:
+    /user/{id}/{propertyName}:
         x-schema: User
-        get:
-            description: Returns the count of users based on the given criteria.
-            x-name: count
+        parameters:
+            - $ref: "#/components/parameters/id"
+            - $ref: "#/components/parameters/propertyName"
+        put:
+            description: Updates a single property of a User
+            x-name: updateProperty
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
             responses:
                 "200":
-                    description: The number of found users matching the search criteria.
+                    description: The updated User object
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/count"
+                                $ref: "#/components/schemas/User"
+            security:
+                - jwt: []
     /user/connect:
         x-name: Connect
         get:

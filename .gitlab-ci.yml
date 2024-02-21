@@ -4,28 +4,41 @@ cache:
     paths:
         - node_modules/
         - dist/
+.job_template: &job_configuration
+    image: node:lts-buster
+    before_script:
+        - corepack enable
 
 build:
     stage: build
-    image: node:12
+    <<: *job_configuration
     script:
-        - npm install -g license-checker
-        - license-checker --failOn 'GPL;LGPL;EPL-1.0;EPL-2.0;CPL-1.0' --exclude 'MIT,BSD,ISC,Apache-2.0,CC0-1.0,Artistic-2.0'
         - yarn install
         - yarn build
+        - yarn lint
+        - yarn docs
 
 test:
     stage: test
-    image: node:12
+    <<: *job_configuration
     script:
-        - yarn test
+        - yarn test --ci --forceExit --detectOpenHandles
+
+validate:
+    stage: test
+    <<: *job_configuration
+    allow_failure:
+        exit_codes:
+            - 101
+    script:
+        - set +e
+        - bash ./validate.sh
 
 publish:
+    stage: deploy
     only:
         - tags
-    image: node:12
-    stage: deploy
+    <<: *job_configuration
     script:
-        - echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
-        - yarn docs
-        - npm publish --access public
+	- yarn build
+        - yarn npm publish --access public

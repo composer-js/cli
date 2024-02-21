@@ -2,7 +2,7 @@ version: "2"
 services:
     server:
         build: .
-        command: ["node_modules/.bin/nodemon", "--inspect=0.0.0.0:9229", "dist/server.js"]
+        command: ["node", "--require", "ts-node/register" ,"--inspect=0.0.0.0:9229", "src/server.ts"]
         volumes:
             - .:/app
             - /app/node_modules
@@ -10,17 +10,17 @@ services:
             - "3000:3000"
             - "9229:9229"
         environment:
-            - datastores__acl__url=mongodb://acl/
-            - datastores__cache__url=redis://cache
+            - datastores__acl__url=mongodb://mongo/
+            - datastores__cache__url=redis://redis
             - datastores__mongodb__url=mongodb://mongodb/
             - NODE_ENV=dev
         links:
             - acl
-            - cache
+            - redis
             - mongodb
     acl:
         image: mongo
-    cache:
+    redis:
         image: redis
     mongodb:
         image: mongo
