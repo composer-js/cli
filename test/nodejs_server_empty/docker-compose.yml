@@ -1,0 +1,26 @@
+version: "2"
+services:
+    server:
+        build: .
+        command: ["node", "--require", "ts-node/register" ,"--inspect=0.0.0.0:9229", "src/server.ts"]
+        volumes:
+            - .:/app
+            - /app/node_modules
+        ports:
+            - "3000:3000"
+            - "9229:9229"
+        environment:
+            - datastores__acl__url=mongodb://mongo/
+            - datastores__cache__url=redis://redis
+            - datastores__mongodb__url=mongodb://mongodb/
+            - NODE_ENV=dev
+        links:
+            - acl
+            - redis
+            - mongodb
+    acl:
+        image: mongo
+    redis:
+        image: redis
+    mongodb:
+        image: mongo

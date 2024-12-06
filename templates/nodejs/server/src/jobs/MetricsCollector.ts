@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright (C) {{year}} {{copyright}}
 ///////////////////////////////////////////////////////////////////////////////
-import { BackgroundService } from "@composer-js/service-core";
-import * as prom from "prom-client";
+import { BackgroundService, ObjectDecorators } from "@composer-js/service-core";
+const { Init } = ObjectDecorators;
 
 /**
  * The `MetricsCollector` provides a background service for collecting Prometheseus metrics for consumption by external
@@ -11,14 +11,16 @@ import * as prom from "prom-client";
  * @author Jean-Philippe Steinmetz <info@acceleratxr.com>
  */
 export default class MetricsCollector extends BackgroundService {
-    private registry: prom.Registry;
-
     constructor(config: any, logger: any) {
         super(config, logger);
-        this.registry = prom.register;
     }
 
-    public run(): void {
+    @Init
+    public init() {
+        // TODO
+    }
+
+    public run() {
         // TODO
     }
 

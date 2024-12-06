@@ -1,34 +1,35 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright (C) {{year}} {{{copyright}}}
 ///////////////////////////////////////////////////////////////////////////////
-import { rootCertificates } from "tls"
 import {
-    AccessControlList,
-    ACLRecord,
-    Auth,
-    Config,
-    Init,
-    Logger,
-    Model,
+{{#if hasModel}}
     ModelRoute,
-    {{#if usesMongodb}}Mongo{{/if}}Repository,
-    ModelUtils,
+    RepoUtils,
+{{/if}}
+    RouteDecorators,
+} from "@composer-js/service-core";
+import { DocDecorators, JWTUser, ObjectDecorators, UserUtils } from "@composer-js/core";
+import { Request as XRequest, Response as XResponse } from "express";
+{{#each dependencies}}
+import {{{this}}} from "../models/{{{this}}}";
+{{/each}}
+const { Description, Returns } = DocDecorators;
+const { Config, Init, Logger } = ObjectDecorators;
+const {
+    Auth,
+{{#if hasModel}}
+    Model,
+{{/if}}
     Param,
     Query,
+    Request,
     Route,
-    User as AuthUser,
     Validate,
 {{#each methods}}
     {{{this}}},
 {{/each}}
-} from "@composer-js/service-core";
-import { JWTUser, UserUtils } from "@composer-js/core";
-{{#each dependencies}}
-import {{{this}}} from "../models/{{{this}}}";
-{{/each}}
-{{#if hasModel}}
-import { {{#if usesMongodb}}Mongo{{/if}}Repository as Repo } from "typeorm";
-{{/if}}
+} = RouteDecorators;
+const AuthUser = RouteDecorators.User;
 
 /**
  * Handles all REST API requests for the endpoint `{{{endpoint}}}`.
@@ -38,53 +39,24 @@ import { {{#if usesMongodb}}Mongo{{/if}}Repository as Repo } from "typeorm";
 {{#if hasModel}}@Model({{{Schema}}}){{/if}}
 @Route("{{{endpoint}}}")
 class {{{Route}}}Route {{#if hasModel}}extends ModelRoute<{{{Schema}}}> {{/if}}{
-    @Config
+    @Config()
     protected config: any;
 
     @Logger
     protected logger: any;
     
-    {{#if hasModel}}
-    @{{#if usesMongodb}}Mongo{{/if}}Repository({{{Schema}}})
-    protected repo?: Repo<{{{Schema}}}>;
+{{#if hasModel}}
+    protected repoUtilsClass: any = RepoUtils<{{{Schema}}}>;
 
-    {{/if}}
+{{/if}}
     /**
      * Initializes a new instance with the specified defaults.
      */
     constructor() {
-    {{#if hasModel}}
+{{#if hasModel}}
         super();
-    {{/if}}
+{{/if}}
     }
-    {{#if hasModel}}
-    /**
-     * Called by the system on startup to create the default access control list for objects of this type.
-     */
-    protected getDefaultACL(): AccessControlList | undefined {
-        // TODO Customize default ACL for this type
-        const records: ACLRecord[] = [];
-
-        // Everyone has read-only access
-        records.push({
-            userOrRoleId: ".*",
-            create: false,
-            read: true,
-            update: false,
-            delete: false,
-            special: false,
-            full: false,
-        });
-
-        return {
-            uid: "{{{Schema}}}",
-            dateCreated: new Date(),
-            dateModified: new Date(),
-            version: 0,
-            records,
-        };
-    }
-    {{/if}}
 
     /**
      * Called on server startup to initialize the route with any defaults.
@@ -99,50 +71,43 @@ class {{{Route}}}Route {{#if hasModel}}extends ModelRoute<{{{Schema}}}> {{/if}}{
      *
      * @throws When the request payload contains invalid input or data.
      */
-    private validate(data: {{#if hasModel}}{{{Schema}}}{{else}}any{{/if}}): void {
-        {{#each (lookup (lookup @root.schemas Schema) requiredMembers)}}
-        if (data["{{this}}"] === undefined) {
-            const err: any = new Error("The required property `{{this}}` is missing.");
-            err.status = 400;
-            throw err;
-        }
-        {{/each}}
+    private validate(obj: {{#if hasModel}}Partial<{{{Schema}}}> | Array<Partial<{{{Schema}}}>>{{else}}any{{/if}}): {{#if hasModel}}Promise<void>{{else}}void{{/if}} {
+        {{#if hasModel}}return super.doValidate(obj);{{/if}}
     }
 
 {{#each routes}}
 
-    /**
-     * {{{this.description}}}
-     */
-    {{#if this.security}}
+    @Description(`
+        {{{this.description}}}
+    `)
+{{#if this.security}}
     @Auth({{{this.security}}})
-    {{/if}}
+{{/if}}
     @{{{this.Method}}}({{#if this.path}}"{{{this.path}}}"{{/if}})
-    {{#if (or (eq name "create") (eq name "update"))}}
+{{#if (or (eq name "create") (eq name "update"))}}
     @Validate("validate")
-    {{/if}}
-    private async {{{this.name}}}({{#if (eq name "count")}}@Param() params: any, @Query() query: any, {{/if}}{{#if (eq name "findAll")}}@Param() params: any, {{/if}}{{#each this.params}}@Param("{{{this}}}") {{{this}}}: string, {{/each}}{{#if this.hasQuery}}@Query() query: any, {{/if}}{{#if this.requestType}}obj: {{{this.requestType}}}, {{/if}}@AuthUser user?: JWTUser): Promise<{{#if this.responseType}}{{{this.responseType}}}{{#if (eq this.name "findById")}} | undefined{{/if}}{{else}}void{{/if}}> {
-        {{#if this.requestType}}
-        const newObj: {{{@root.Schema}}} = new {{{@root.Schema}}}(obj);
-
-        {{/if}}
-        {{#if (eq name "count")}}
-        return super.doCount(params, query, user);
-        {{else if (eq name "create")}}
-        return super.doCreate(newObj, user);
-        {{else if (eq name "delete")}}
-        return super.doDelete(id, user);
-        {{else if (eq name "findAll")}}
-        return super.doFindAll(params, query, user);
-        {{else if (eq name "findById")}}
-        return super.doFindById(id, user);
-        {{else if (eq name "truncate")}}
-        return super.doTruncate(user);
-        {{else if (eq name "update")}}
-        return super.doUpdate(id, newObj, user);
-        {{else}}
+{{/if}}
+{{#if this.responseType}}
+    @Returns([{{{this.responseType}}}])
+{{/if}}
+    private async {{{this.name}}}({{#if (eq name "count")}}@Param() params: any, @Query() query: any, {{/if}}{{#if (eq name "findAll")}}@Param() params: any, {{/if}}{{#each this.params}}@Param("{{{this}}}") {{{this}}}: string, {{/each}}{{#if this.hasQuery}}@Query() query: any, {{/if}}{{#if this.requestType}}obj{{#if (eq name "create")}}s{{/if}}: Partial<{{{this.requestType}}}>{{#if (eq name "create")}} | Array<Partial<{{{this.requestType}}}>>{{/if}}, {{/if}}@Request req: XRequest{{#if (eq name "count")}}, @Response res: XResponse{{/if}}, @AuthUser {{#if this.security}}user{{else}}user?{{/if}}: JWTUser): Promise<{{#if this.responseType}}{{{this.responseType}}}{{#if (eq name "create")}} | Array<{{{this.requestType}}}>{{/if}}{{#if (eq this.name "findById")}} | undefined{{/if}}{{else}}void{{/if}}> {
+{{#if (eq name "count")}}
+        return super.doCount({ params, query, req, res, user });
+{{else if (eq name "create")}}
+        return super.doCreate(objs, { req, user });
+{{else if (eq name "delete")}}
+        return super.doDelete(id, { req, user });
+{{else if (eq name "findAll")}}
+        return super.doFindAll({ params, query, req, user });
+{{else if (eq name "findById")}}
+        return super.doFindById(id, { req, user });
+{{else if (eq name "truncate")}}
+        return super.doTruncate({ req, user });
+{{else if (eq name "update")}}
+        return super.doUpdate(id, obj, { req, user });
+{{else}}
         throw new Error("This route is not implemented.");
-        {{/if}}
+{{/if}}
     }
 {{/each}}
 }

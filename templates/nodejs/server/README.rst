@@ -1,9 +1,8 @@
----
-title: "{{service_title}}"
-date: {{timestamp}}
----
+==========================
+{{service_title}}
+==========================
 
-{{service_description}}
+A service that provides social features to users including a social profile, online presence, friends list, blocked players list and player-to-player messaging.
 
 ## Getting Started
 

@@ -1,32 +1,20 @@
-version: "2"
 services:
     server:
-        build: .
-        command: ["node_modules/.bin/nodemon", "--inspect=0.0.0.0:9229", "dist/server.js"]
+        extends:
+            file: ./docker-compose.test.yml
+            service: server
+        build: 
+            args:
+                - NODE_ENV=development
+        command: ["yarn", "debug"]
         volumes:
             - .:/app
-            - /app/node_modules
-        ports:
-            - "3000:3000"
-            - "9229:9229"
         environment:
-            - datastores__acl__url=mongodb://acl/
-            - datastores__cache__url=redis://cache
-        {{#each datastores}}
-            - datastores__{{this.name}}__url={{this.type}}://{{this.name}}/
-        {{/each}}
-            - NODE_ENV=dev
-        links:
-            - acl
-            - cache
-        {{#each datastores}}
-            - {{this.name}}
-        {{/each}}
-    acl:
+            - NPM_TOKEN
+    mongo:
         image: mongo
-    cache:
+    redis:
         image: redis
-{{#each datastores}}
-    {{this.name}}:
-        image: {{#if (eq this.type "mongodb")}}mongo{{else}}{{this.type}}{{/if}}
-{{/each}}
+secrets:
+    YARN_TOKEN:
+        environment: NPM_TOKEN

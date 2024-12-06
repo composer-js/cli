@@ -4,13 +4,14 @@
         "target": "es2019",
         "module": "commonjs",
         "lib": ["es6"],
-        "strict": true,
-        "sourceMap": true,
+        "strict": false,
+        "sourceMap": false,
+        "declaration": false,
         "allowSyntheticDefaultImports": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "outDir": "dist",
-        "typeRoots": ["node_modules/@types"]
+        "noImplicitAny": false
     },
     "include": ["src"],
     "exclude": ["dist", "docs", "node_modules"]

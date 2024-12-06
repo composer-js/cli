@@ -1,0 +1,40 @@
+# This folder is cached between builds
+# http://docs.gitlab.com/ce/ci/yaml/README.html#cache
+cache:
+    paths:
+        - node_modules/
+        - dist/
+        - docs/
+
+build:
+    stage: build
+    image: node:lts-buster
+    script:
+        - npm install -g license-checker
+        - license-checker --failOn 'GPL;LGPL;EPL-1.0;EPL-2.0;CPL-1.0' --exclude 'MIT,BSD,ISC,Apache-2.0,CC0-1.0,Artistic-2.0'
+        - yarn install
+        - yarn build
+
+test-code:
+    stage: test
+    image: node:lts-buster
+    script:
+        - yarn test --forceExit
+        - yarn test
+
+publish:
+    stage: deploy
+    image: docker:git
+    only:
+        - tags
+    services:
+        - docker:dind
+    script:
+        - export version=$(cat package.json | grep version | sed 's/.*"version":.*"\(.*\)",/\1/')
+        - export registryPath=$(echo $CI_REGISTRY/$CI_PROJECT_PATH | awk '{print tolower($0)}')
+        - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+        - docker build -t $CI_PROJECT_NAME .
+        - docker tag $CI_PROJECT_NAME:latest $registryPath:latest
+        - docker push $registryPath:latest
+        - docker tag $CI_PROJECT_NAME:latest $registryPath:$version
+        - docker push $registryPath:$version

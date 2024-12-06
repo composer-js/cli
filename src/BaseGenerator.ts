@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Copyright (C) 2020 AcceleratXR, Inc. All rights reserved.
+// Copyright (C) Xsolla (USA), Inc. All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
 import Generator from "./Generator";
 import handlebars from "handlebars";
 import { FileUtils, OASUtils, StringUtils } from "@composer-js/core";
 import * as fs from "fs";
 import * as path from "path";
-import { isTextSync } from "istextorbinary";
+import { isText } from "istextorbinary";
 import * as shelljs from "shelljs";
 
 /**
@@ -21,13 +21,12 @@ abstract class BaseGenerator implements Generator {
         this.logger = logger;
     }
 
-    public abstract get language(): string;
-    public abstract get type(): string;
+    public abstract get templatePath(): string;
 
     public init(): void {
         handlebars.registerHelper(require('handlebars-helpers')());
         
-        this.TemplatePath = path.resolve(path.join(__dirname, "..", "templates", this.language, this.type));
+        this.TemplatePath = path.resolve(this.templatePath);
         
         if (!fs.existsSync(this.TemplatePath)) {
             throw new Error("No template files exist at path: " + this.TemplatePath);
@@ -46,34 +45,29 @@ abstract class BaseGenerator implements Generator {
      * Generates a map of global template variable names to values that will be swapped upon file generation.
      */
     protected createGlobalVars(spec: any): void {
-        let result: any = {};
+        const result: any = Object.assign({
+            datastores: {},
+            info: {}
+        }, spec);
 
         const now: Date = new Date();
-        result.author = shelljs.env["author"] ? shelljs.env["author"] : "<AUTHOR>";
-        result.copyright = shelljs.env["copyright"] ? shelljs.env["copyright"] : "<COPYRIGHT>";
-        result.repository = shelljs.env["repository"] ? shelljs.env["repository"] : "<REPOSITORY>";
+        result.info.author = shelljs.env["author"] ? shelljs.env["author"] : "<AUTHOR>";
+        result.info.copyright = shelljs.env["copyright"] ? shelljs.env["copyright"] : "<COPYRIGHT>";
+        result.info.name = spec?.info?.title.toLowerCase().replace(new RegExp(/ /, "gi"), "_") || "new_project";
+        result.info.repository = shelljs.env["repository"] ? shelljs.env["repository"] : "<REPOSITORY>";
         result.timestamp = now.toISOString();
         result.day = now.getDay();
         result.month = now.getMonth();
         result.year = now.getFullYear();
 
-        result.license = spec.info.license ? spec.info.license.url : undefined;
-        result.service_description = spec.info.description;
-        result.service_name = spec.info.title.toLowerCase().replace(new RegExp(/ /, "gi"), "_");
-        result.service_title = spec.info.title;
-        result.service_version = spec.info.version;
-
-        result.datastores = {};
-        if (spec.components && spec.components.schemas) {
-            for (let schemaName in spec.components.schemas) {
-                let schema = spec.components.schemas[schemaName];
+        if (spec?.components?.schemas) {
+            for (const schemaName in spec.components.schemas) {
+                const schema = spec.components.schemas[schemaName];
                 if (schema["x-datastore"]) {
-                    let name = schema["x-datastore"];
-                    let def = OASUtils.getDatastore(spec, name);
+                    const name = schema["x-datastore"];
+                    const def = OASUtils.getDatastore(spec, name);
                     if (def) {
-                        def.name = name;
                         result.datastores[name] = def;
-                        result["uses" + StringUtils.toPascalCase(def.type)] = true;
                     }
                 }
             }
@@ -108,120 +102,123 @@ abstract class BaseGenerator implements Generator {
      * @param spec The OpenAPI spec to generate routes from.
      */
     protected generateRoutes(spec: any): any[] {
-        let result: any = {};
+        const result: any = {};
 
-        // Go through each path definition in the spec and generate a template info block for each endpoint
-        for (let path in spec.paths) {
-            let def = spec.paths[path];
-            let schemaName = def["x-schema"] ? def["x-schema"] : undefined;
-            let name = def["x-name"] ? def["x-name"] : schemaName ? schemaName : "Global";
+        if (spec?.paths) {
+            // Go through each path definition in the spec and generate a template info block for each endpoint
+            for (let path in spec.paths) {
+                const def = spec.paths[path];
+                const schemaName = def["x-schema"] ? def["x-schema"] : undefined;
+                const name = def["x-name"] && def["x-name"] !== "_a" ? def["x-name"] : schemaName ? schemaName : "Global";
 
-            // Create the initial object that will contain all route info
-            if (!result[name]) {
-                result[name] = {
-                    endpoint: path,
-                    hasModel: schemaName !== undefined,
-                    Route: StringUtils.toPascalCase(name),
-                    route: StringUtils.toCamelCase(name),
-                    ROUTE: name.toLocaleUpperCase(),
-                    routes: [],
-                    methods: [],
-                    dependencies: []
-                };
-                if (schemaName) {
-                    result[name].Schema = StringUtils.toPascalCase(schemaName);
-                    result[name].schema = StringUtils.toCamelCase(schemaName);
-                    result[name].SCHEMA = schemaName.toLocaleUpperCase();
-                    result[name].members = this.generateSchemaMembers(spec, schemaName);
-                }
-            }
-
-            // Extract the parameters from the path (if any exist)
-            let params = path.match(new RegExp("(?<=\\{).*?(?=\\})", "gi"));
-
-            // Go through each operation
-            for (let method in def) {
-                if (method === "parameters" || method.includes("x-")) {
-                    continue;
-                }
-
-                let route = def[method];
-
-                // If 'x-upgrade' is set then the method is overridden to WebSocket.
-                if (route["x-upgrade"])
-                {
-                    method = "WebSocket";
-                }
-
-                // Add the method to our global list
-                let Method: string = StringUtils.toPascalCase(method);
-                if (!result[name].methods.includes(Method)) {
-                    result[name].methods.push(Method);
-                }
-
-                // Convert the path to a relative path and swap the params to be Express compatible
-                let subpath = path
-                    .replace(result[name].endpoint, "")
-                    .replace("{", ":")
-                    .replace("}", "");
-
-                // Extract the request data type (if present)
-                let requestTypeInfo =
-                    route.requestBody && route.requestBody.content && route.requestBody.content["application/json"]
-                        ? OASUtils.getTypeInfo(route.requestBody.content["application/json"].schema, spec, this.convertDataType)
-                        : undefined;
-
-                // Extract the response data type (if present)
-                let response = OASUtils.getResponseContent(route);
-                let responseTypeInfo =
-                    response && response["application/json"]
-                        ? OASUtils.getTypeInfo(response["application/json"].schema, spec, this.convertDataType)
-                        : undefined;
-
-                // Convert the security block to a list of strategy names
-                let security = undefined;
-                if (route.security) {
-                    security = [];
-                    for (let key in route.security) {
-                        for (let strategy in route.security[key]) {
-                            security.push(strategy);
-                        }
+                // Create the initial object that will contain all route info
+                if (!result[name]) {
+                    result[name] = {
+                        endpoint: path,
+                        hasModel: schemaName !== undefined,
+                        Route: StringUtils.toPascalCase(name),
+                        route: StringUtils.toCamelCase(name),
+                        ROUTE: name.toLocaleUpperCase(),
+                        routes: [],
+                        methods: [],
+                        dependencies: []
+                    };
+                    if (schemaName) {
+                        result[name].Schema = StringUtils.toPascalCase(schemaName);
+                        result[name].schema = StringUtils.toCamelCase(schemaName);
+                 
+                        result[name].SCHEMA = schemaName.toLocaleUpperCase();
+                        result[name].properties = this.generateSchemaProperties(spec, schemaName);
                     }
                 }
 
-                result[name].routes.push({
-                    after: JSON.stringify(route["x-after"]),
-                    before: JSON.stringify(route["x-before"]),
-                    description: route.description,
-                    hasQuery: route.parameters !== undefined,
-                    method: StringUtils.toCamelCase(method),
-                    Method: StringUtils.toPascalCase(method),
-                    METHOD: method.toUpperCase(),
-                    name: route["x-name"] ? StringUtils.toCamelCase(route["x-name"]) : undefined,
-                    Name: route["x-name"] ? StringUtils.toPascalCase(route["x-name"]) : undefined,
-                    NAME: route["x-name"] ? route["x-name"].toUpperCase() : undefined,
-                    params,
-                    path: subpath,
-                    requestType: requestTypeInfo ? requestTypeInfo.type : undefined,
-                    responseType: responseTypeInfo && responseTypeInfo.type ? responseTypeInfo.type : undefined,
-                    security: JSON.stringify(security)
-                });
+                // Extract the parameters from the path (if any exist)
+                const params = path.match(new RegExp("(?<=\\{).*?(?=\\})", "gi"));
 
-                if (requestTypeInfo) {
-                    let type = requestTypeInfo.subType ? requestTypeInfo.subType : requestTypeInfo.type;
-                    const deps: string[] = this.getSchemaDependencies(spec, type, true);
-                    for (const dep of deps) {
-                        if (!result[name].dependencies.includes(dep)) {
-                            result[name].dependencies.push(dep);
+                // Go through each operation
+                for (let method in def) {
+                    if (method === "parameters" || method.includes("x-")) {
+                        continue;
+                    }
+
+                    const route = def[method];
+
+                    // If 'x-upgrade' is set then the method is overridden to WebSocket.
+                    if (route["x-upgrade"])
+                    {
+                        method = "WebSocket";
+                    }
+
+                    // Add the method to our global list
+                    const Method: string = StringUtils.toPascalCase(method);
+                    if (!result[name].methods.includes(Method)) {
+                        result[name].methods.push(Method);
+                    }
+
+                    // Convert the path to a relative path and swap the params to be Express compatible
+                    const subpath = path
+                        .replace(result[name].endpoint, "")
+                        .replace("{", ":")
+                        .replace("}", "");
+
+                    // Extract the request data type (if present)
+                    const requestTypeInfo =
+                        route.requestBody && route.requestBody.content && route.requestBody.content["application/json"]
+                            ? OASUtils.getTypeInfo(route.requestBody.content["application/json"].schema, spec, this.convertDataType)
+                            : undefined;
+
+                    // Extract the response data type (if present)
+                    const response = OASUtils.getResponseContent(route);
+                    const responseTypeInfo =
+                        response && response["application/json"]
+                            ? OASUtils.getTypeInfo(response["application/json"].schema, spec, this.convertDataType)
+                            : undefined;
+
+                    // Convert the security block to a list of strategy names
+                    let security: any[] | undefined = undefined;
+                    if (route.security) {
+                        security = [];
+                        for (let key in route.security) {
+                            for (let strategy in route.security[key]) {
+                                security.push(strategy);
+                            }
                         }
                     }
-                }
-                if (responseTypeInfo) {
-                    let type = responseTypeInfo.subType ? responseTypeInfo.subType : responseTypeInfo.type;
-                    const deps: string[] = this.getSchemaDependencies(spec, type, true);
-                    for (const dep of deps) {
-                        if (!result[name].dependencies.includes(dep)) {
-                            result[name].dependencies.push(dep);
+
+                    result[name].routes.push({
+                        after: JSON.stringify(route["x-after"]),
+                        before: JSON.stringify(route["x-before"]),
+                        description: route.description,
+                        hasQuery: route.parameters !== undefined,
+                        method: StringUtils.toCamelCase(method),
+                        Method: StringUtils.toPascalCase(method),
+                        METHOD: method.toUpperCase(),
+                        name: route["x-name"] ? StringUtils.toCamelCase(route["x-name"]) : undefined,
+                        Name: route["x-name"] ? StringUtils.toPascalCase(route["x-name"]) : undefined,
+                        NAME: route["x-name"] ? route["x-name"].toUpperCase() : undefined,
+                        params,
+                        path: subpath,
+                        requestType: requestTypeInfo ? requestTypeInfo.type : undefined,
+                        responseType: responseTypeInfo && responseTypeInfo.type ? responseTypeInfo.type : undefined,
+                        security: JSON.stringify(security)
+                    });
+
+                    if (requestTypeInfo) {
+                        const type = requestTypeInfo.subType ? requestTypeInfo.subType : requestTypeInfo.type;
+                        const deps: string[] = this.getSchemaDependencies(spec, type, true);
+                        for (const dep of deps) {
+                            if (!result[name].dependencies.includes(dep)) {
+                                result[name].dependencies.push(dep);
+                            }
+                        }
+                    }
+                    if (responseTypeInfo) {
+                        const type = responseTypeInfo.subType ? responseTypeInfo.subType : responseTypeInfo.type;
+                        const deps: string[] = this.getSchemaDependencies(spec, type, true);
+                        for (const dep of deps) {
+                            if (!result[name].dependencies.includes(dep)) {
+                                result[name].dependencies.push(dep);
+                            }
                         }
                     }
                 }
@@ -232,16 +229,16 @@ abstract class BaseGenerator implements Generator {
     }
 
     /**
-     * Generates a list of template variable definitions for each member of the schema with the specified name.
+     * Generates a list of template variable definitions for each property of the schema with the specified name.
      * 
      * @param {object} spec The OpenAPI specification to reference.
-     * @param {string} schemaName The name of the schema to generate members from.
-     * @returns {any[]} A list of all members and their associated template replacement values.
+     * @param {string} schemaName The name of the schema to generate properties from.
+     * @returns {any[]} A list of all properties and their associated template replacement values.
      */
-    protected generateSchemaMembers(spec: any, schemaName: string): any[] {
-        let result: any[] = [];
+    protected generateSchemaProperties(spec: any, schemaName: string): any[] {
+        const result: any[] = [];
 
-        let schema: any = OASUtils.getSchema(spec, schemaName);
+        const schema: any = OASUtils.getSchema(spec, schemaName);
         if (schema) {
             const baseClass: string = StringUtils.toPascalCase(schema["x-baseClass"] ? schema["x-baseClass"] : "None");
 
@@ -263,33 +260,25 @@ abstract class BaseGenerator implements Generator {
                 }
 
                 // Is the member a regular type, an array or a reference?
-                let typeInfo = OASUtils.getTypeInfo(memberDef, spec, this.convertDataType);
+                const typeInfo = OASUtils.getTypeInfo(memberDef, spec, this.convertDataType);
 
                 if (typeInfo) {
-                    let memberVars: any = {};
-                    memberVars.defaultValue = memberDef.default ? memberDef.default : this.getDefaultValue(typeInfo.type, typeInfo.format, typeInfo.subType);
-                    memberVars.exampleValue = memberDef.example ? memberDef.example : this.getExampleValue(typeInfo.type, typeInfo.format, typeInfo.subType);
-                    memberVars.description = memberDef.description;
-                    memberVars.identifier = memberDef["x-identifier"];
-                    memberVars.unique = memberDef["x-unique"];
-                    memberVars.Name = StringUtils.toPascalCase(memberName);
-                    memberVars.name = StringUtils.toCamelCase(memberName);
-                    memberVars.NAME = memberName.toLocaleUpperCase();
-                    memberVars.nullable = memberDef.nullable;
-                    memberVars.subtype = typeInfo.subType;
-                    memberVars.type = typeInfo.type;
-                    memberVars.values = typeInfo.values;
+                    memberDef.defaultValue = memberDef.default ? memberDef.default : this.getDefaultValue(typeInfo.type, typeInfo.format, typeInfo.subType);
+                    memberDef.exampleValue = memberDef.example ? memberDef.example : this.getExampleValue(typeInfo.type, typeInfo.format, typeInfo.subType);
+                    memberDef.Name = StringUtils.toPascalCase(memberName);
+                    memberDef.name = StringUtils.toCamelCase(memberName);
+                    memberDef.NAME = memberName.toLocaleUpperCase();
 
-                    let subSchemaName = typeInfo.subSchemaRef ? path.basename(typeInfo.subSchemaRef) : null;
+                    const subSchemaName = typeInfo.subSchemaRef ? path.basename(typeInfo.subSchemaRef) : null;
                     if (subSchemaName) {
-                        memberVars.subSchema = StringUtils.toCamelCase(subSchemaName);
-                        memberVars.SubSchema = StringUtils.toPascalCase(subSchemaName);
-                        memberVars.SUBSCHEMA = subSchemaName.toLocaleUpperCase();
+                        memberDef.subSchema = StringUtils.toCamelCase(subSchemaName);
+                        memberDef.SubSchema = StringUtils.toPascalCase(subSchemaName);
+                        memberDef.SUBSCHEMA = subSchemaName.toLocaleUpperCase();
                     }
 
-                    result.push(memberVars);
+                    result.push(memberDef);
                 } else {
-                    throw new Error("Unable to convert type: schema:" + schemaName + ", member:" + memberName);
+                    throw new Error("Unable to convert type: schema:" + schemaName + ", property:" + memberName);
                 }
             }
         } else {
@@ -303,35 +292,17 @@ abstract class BaseGenerator implements Generator {
      * Generates a list of template variable definitions for each schema in the given OpenAPI specification.
      * @param spec The OpenAPI specification to generate schemas for.
      */
-    protected generateSchemas(spec: any): any[] {
-        let result: any[] = [];
+    protected generateSchemas(spec: any) {
+        const result: any = Object.assign({
+        }, spec?.components?.schemas);
 
-        if (spec.components && spec.components.schemas) {
-            for (let schemaName in spec.components.schemas) {
-                let schema = spec.components.schemas[schemaName];
-                // When the schema has the x-ignore flag we don't generate code for it.
-                if (schema["x-ignore"]) {
-                    continue;
-                }
-
-                let schemaVars: any = {};
-                const baseClass: string | undefined = schema["x-baseClass"] ? StringUtils.toPascalCase(schema["x-baseClass"]) : undefined;
-                schemaVars.baseClass = baseClass;
-                schemaVars.cached = schema["x-cached"];
-                schemaVars.datastore = schema["x-datastore"];
-                schemaVars.description = schema.description;
-                schemaVars.Schema = StringUtils.toPascalCase(schemaName);
-                schemaVars.schema = StringUtils.toCamelCase(schemaName);
-                schemaVars.SCHEMA = schemaName.toLocaleUpperCase();
-                schemaVars.requiredMembers = schema["required"];
-                schemaVars.trackChanges = schema["x-versioned"];
-                schemaVars.members = this.generateSchemaMembers(spec, schemaName);
-                schemaVars.dependencies = this.getSchemaDependencies(spec, schemaName);
-
-                result.push(schemaVars);
-            }
-        } else {
-            throw new Error("Specification file missing schema definitions.");
+        for (const schemaName in result) {
+            const schema = result[schemaName];
+            schema.Schema = StringUtils.toPascalCase(schemaName);
+            schema.schema = StringUtils.toCamelCase(schemaName);
+            schema.SCHEMA = schemaName.toLocaleUpperCase();
+            schema.properties = this.generateSchemaProperties(spec, schemaName);
+            schema.dependencies = this.getSchemaDependencies(spec, schemaName);
         }
 
         return result;
@@ -369,7 +340,7 @@ abstract class BaseGenerator implements Generator {
                 if (ref) {
                     // Strip out the primary name of the dependency schema
                     const slashIdx: number = ref.lastIndexOf("/");
-                    ref = slashIdx >= 0 ? ref.substr(slashIdx + 1) : ref;
+                    ref = slashIdx >= 0 ? ref.substring(slashIdx + 1) : ref;
 
                     // Don't add duplicates to the list
                     if (!result.includes(ref)) {
@@ -396,19 +367,31 @@ abstract class BaseGenerator implements Generator {
         const srcName: string = path.basename(srcPath);
 
         // Is the file binary or text?
-        if (isTextSync(srcPath)) {
+        if (isText(srcPath)) {
             // Determine if the src file is a schema or route template. If so we'll want to iterate
             // through each schemas/routes for the file.
             if (srcName.match(new RegExp(/.*\{\{schema\}\}.*/, 'i'))) {
-                for (const schema of vars.schemas) {
-                    const finalVars: any = Object.assign({}, vars, schema);
-                    await this.processTemplate(srcPath, destPath, finalVars);
+                if (vars.components?.schemas) {
+                    for (const key in vars.components.schemas) {
+                        const schema = vars.components.schemas[key];
+
+                        // When the schema has the x-ignore flag we don't generate code for it.
+                        if (schema["x-ignore"]) {
+                            continue;
+                        }
+                        
+                        const finalVars: any = Object.assign({}, vars, schema);
+                        await this.processTemplate(srcPath, destPath, finalVars);
+                    }
                 }
             }
             else if (srcName.match(new RegExp(/.*\{\{route\}\}.*/, 'i'))) {
-                for (const routeName in vars.routeHandlers) {
-                    const finalVars: any = Object.assign({}, vars, vars.routeHandlers[routeName]);
-                    await this.processTemplate(srcPath, destPath, finalVars);
+                if (vars.routes) {
+                    for (const key in vars.routes) {
+                        const route = vars.routes[key];
+                        const finalVars: any = Object.assign({}, vars, route);
+                        await this.processTemplate(srcPath, destPath, finalVars);
+                    }
                 }
             }
             else {
@@ -492,10 +475,22 @@ abstract class BaseGenerator implements Generator {
      * @param addtlFiles The list of additional file paths to copy to the destination.
      */
     public async generate(apiSpec: any, outputPath: string, addtlFiles: string[]): Promise<void> {
+        // Set a default empty spec if none provided. We'll use the directory name as the title
+        apiSpec = apiSpec || {
+            components: {
+                schemas: {}
+            },
+            info: {
+                title: path.basename(outputPath),
+                version: "0.0.1"
+            },
+            routes: {}
+        };
+
         // First generate all template variables that will be used during code generation
         const vars: any = this.createGlobalVars(apiSpec);
-        vars.schemas = this.generateSchemas(apiSpec);
-        vars.routeHandlers = this.generateRoutes(apiSpec);
+        vars.components.schemas = this.generateSchemas(apiSpec);
+        vars.routes = this.generateRoutes(apiSpec);
 
         // Now go through every file in the template path and begin processing/copying to the destination
         await this.processDirectory(this.TemplatePath, outputPath, vars);

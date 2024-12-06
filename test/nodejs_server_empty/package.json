@@ -1,0 +1,101 @@
+{
+	"name": "tmp",
+	"version": "0.0.1",
+	"description": "",
+	"author": "&lt;AUTHOR&gt;",
+	"repository": "&lt;REPOSITORY&gt;",
+	"license": "",
+	"files": [
+		"dist"
+	],
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"scripts": {
+		"lint": "tslint  --project tsconfig.json -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
+		"prebuild": "rimraf dist",
+		"build": "tsc",
+		"docs": "typedoc --plugin typedoc-plugin-markdown --out docs/reference --target esnext --mode file src",
+		"start": "ts-node src/server.ts",
+		"debug": "nodemon --legacy-watch --watch 'src/**/*' --ext 'ts' --exec node --inspect=0.0.0.0:9229 --require ts-node/register ./src/server.ts",
+		"test": "jest --coverage",
+		"test:watch": "jest --coverage --watch",
+		"test:prod": "npm run lint && npm run test -- --no-cache",
+		"report-coverage": "cat ./coverage/lcov.info | coveralls",
+		"commit": "git-cz",
+		"semantic-release": "semantic-release",
+		"semantic-release-prepare": "ts-node tools/semantic-release-prepare",
+		"precommit": "lint-staged",
+		"postversion": "git push --follow-tags"
+	},
+	"lint-staged": {
+		"{src,test}/**/*.ts": [
+			"prettier --write",
+			"git add"
+		]
+	},
+	"config": {
+		"commitizen": {
+			"path": "node_modules/cz-conventional-changelog"
+		},
+		"mongodbMemoryServer": {
+			"version": "4.2.2"
+		}
+	},
+	"commitlint": {
+		"extends": [
+			"@commitlint/config-conventional"
+		]
+	},
+	"devDependencies": {
+		"@commitlint/cli": "^17.0.2",
+		"@commitlint/config-conventional": "^17.0.2",
+		"@types/jest": "^28.1.1",
+		"@types/node": "^18.0.3",
+		"@types/request": "^2.48.7",
+		"@types/supertest": "^2.0.11",
+		"@types/command-line-args": "^5.2.0",
+		"@types/express": "^4.16.1",
+		"@types/passport-strategy": "^0.2.35",
+		"colors": "^1.4.0",
+		"commitizen": "^4.2.4",
+		"coveralls": "^3.1.1",
+		"cross-env": "^7.0.2",
+		"cz-conventional-changelog": "^3.2.0",
+		"husky": "^8.0.1",
+		"ioredis-mock": "^8.2.2",
+		"jest": "^28.1.1",
+		"jest-config": "^28.1.1",
+		"lint-staged": "^13.0.1",
+		"mongodb-memory-server": "^8.6.0",
+		"nock": "^13.2.1",
+		"nodemon": "^2.0.12",
+		"prettier": "^2.3.2",
+		"replace-in-file": "^6.2.0",
+		"rimraf": "^3.0.2",
+		"semantic-release": "^19.0.2",
+		"sqlite3": "^5.0.2",
+		"supertest": "^6.1.4",
+		"ts-jest": "^28.0.4",
+		"ts-node": "^10.1.0",
+		"tslint": "^6.1.2",
+		"tslint-config-prettier": "^1.15.0",
+		"tslint-config-standard": "^9.0.0",
+		"typedoc": "^0.23.7",
+		"typedoc-plugin-markdown": "^3.10.4",
+		"typescript": "^4.3.5",
+		"utimes": "^5.1.1"
+	},
+	"dependencies": {
+		"@composer-js/service-core": "^1.1.2",
+		"body-parser": "^1.18.3",
+		"command-line-args": "^5.2.0",
+		"cors": "^2.8.5",
+		"express": "^4.16.4",
+		"ioredis": "^4.14.1",
+		"mongodb": "^3.2.3",
+		"nconf": "^0.10.0",
+		"passport": "^0.4.0",
+		"passport-strategy": "^1.0.0"
+	}
+}

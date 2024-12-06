@@ -1,5 +1,5 @@
 ﻿///////////////////////////////////////////////////////////////////////////////
-// Copyright (C) 2018 AcceleratXR, Inc. All rights reserved.
+// Copyright (C) Xsolla (USA), Inc. All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
 import * as commandLineArgs from "command-line-args";
 import { ClassLoader, Logger, OASUtils } from "@composer-js/core";
@@ -9,24 +9,19 @@ import * as shelljs from "shelljs";
 import * as merge from "deepmerge";
 const packageInfo = require("../package.json");
 
-const printHelp = function(langs: string[], types: string[]) {
+const printHelp = function(templates: string[]) {
     console.log("Usage: composer -i <input> -o <output> -l <language> -t <type>");
     console.log("");
     console.log("\t\t-i --input\tThe input OpenAPI specification file to generate from.");
     console.log("\t\t\t\tAccepts JSON or YAML formatted files. Specify this option multiple times to merge files.");
     console.log("\t\t-o --output\tThe destination path to write all files to.");
-    console.log("\t\t-l --language\tThe desired output language to generate.");
     console.log("\t\t-a --add\tThe path to one or more additional files to be include.");
     console.log("\t\t-v --version\tDisplays the release version of the tool.");
     console.log("\t\t-h --help\tDisplays this help menu.");
-    console.log("\t\t\t\tSupported Languages:");
-    for (const lang of langs) {
-        console.log("\t\t\t\t\t" + lang);
-    }
-    console.log("\t\t-t --type\tThe type of files to generate.");
-    console.log("\t\t\t\tSupported Types:");
-    for (const type of types) {
-        console.log("\t\t\t\t\t" + type);
+    console.log("\t\t-t --template\tThe template use for file generation.");
+    console.log("\t\t\t\tSupported Templates:");
+    for (const template of templates) {
+        console.log("\t\t\t\t\t" + template);
     }
 };
 
@@ -40,8 +35,7 @@ const printVersion = function() {
 const cliOptions = commandLineArgs([
     { name: "input", alias: "i", type: String, multiple: true },
     { name: "output", alias: "o", type: String },
-    { name: "language", alias: "l", type: String },
-    { name: "type", alias: "t", type: String },
+    { name: "template", alias: "t", type: String },
     { name: "add", alias: "a", type: String, multiple: true },
     { name: "version", alias: "v", type: Boolean },
     { name: "help", alias: "h", type: Boolean }
@@ -59,88 +53,56 @@ const processCommandLine = async () =>{
 
         // Load all available generator classes
         const cl: ClassLoader = new ClassLoader(path.join(__dirname, "./generators"));
-        await cl.Load();
+        await cl.load();
 
         // Build a map of all generator language => type => generator
-        const genMap: any = {};
-        const langs: string[] = [];
-        const types: string[] = [];
-        for (const pair of cl.GetClasses()) {
+        const generators: any = {};
+        for (const pair of cl.getClasses()) {
+            const name: string = pair[0];
             const clazz: any = pair[1];
             const gen: Generator = new clazz(logger);
-
-            // Add to the list of supported languages
-            if (!langs.includes(gen.language)) {
-                langs.push(gen.language);
-            }
-
-            // Add to the list of supported app types
-            if (!types.includes(gen.type)) {
-                types.push(gen.type);
-            }
-
-            // Add to the generator map
-            if (!genMap[gen.language]) {
-                genMap[gen.language] = {};
-            }
-            genMap[gen.language][gen.type] = gen;
+            generators[name] = gen;
         }
 
         if (cliOptions["help"]) {
-            printHelp(langs, types);
+            printHelp(generators);
             process.exit(0);
         }
     
         // Make sure all required options have been set.
-        if (!cliOptions["input"]) {
-            console.error("Error: No input file specified.");
-            printHelp(langs, types);
-            process.exit(1);
-        }
         if (!cliOptions["output"]) {
             console.error("Error: No output directory specified.");
-            printHelp(langs, types);
+            printHelp(generators);
             process.exit(1);
         }
         if (!cliOptions["language"]) {
             console.error("Error: No language specified.");
-            printHelp(langs, types);
+            printHelp(generators);
             process.exit(1);
         }
         if (!cliOptions["type"]) {
             console.error("Error: No type specified.");
-            printHelp(langs, types);
+            printHelp(generators);
             process.exit(1);
         }
     
-        // Validate the selected language
-        if (!langs.includes(cliOptions["language"])) {
-            console.error("Error: Unsupported language specified: " + cliOptions["language"]);
+        // Validate the selected template
+        if (!generators.includes(cliOptions["template"])) {
+            console.error("Error: Unsupported template specified: " + cliOptions["template"]);
             console.log("");
-            console.log("Supported Languages:");
-            for (let lang in langs) {
-                console.log("\t" + lang);
-            }
-            process.exit(1);
-        }
-    
-        // Validate the selected type
-        if (!types.includes(cliOptions["type"])) {
-            console.error("Error: Unsupported type specified: " + cliOptions["type"]);
-            console.log("");
-            console.log("Supported Types:");
-            for (let type in types) {
-                console.log("\t" + type);
+            console.log("Supported Templates:");
+            for (const template in generators) {
+                console.log("\t" + template);
             }
             process.exit(1);
         }
     
         // Load all OpenAPI specifications into one document
-        let apiSpec = {};
+        let apiSpec: any = undefined;
         for (const spec of cliOptions["input"]) {
             try {
                 const specPath: string = path.resolve(path.join(pwd, spec));
-                apiSpec = merge(await OASUtils.loadSpec(specPath), apiSpec);
+                apiSpec = merge(await OASUtils.loadSpec(specPath), apiSpec || {});
             } catch (err) {
                 console.error("File is an invalid or malformed OpenAPI specification file: " + spec);
                 console.error(err);
@@ -149,7 +111,7 @@ const processCommandLine = async () =>{
         }
 
         // Run the desired generator
-        const generator: Generator = genMap[cliOptions["language"]][cliOptions["type"]];
+        const generator: Generator = generators[cliOptions["template"]];
         generator.init();
         await generator.generate(apiSpec, path.resolve(path.join(pwd, cliOptions["output"])), cliOptions["add"]);
     } catch (err) {
@@ -161,5 +123,5 @@ const processCommandLine = async () =>{
 export default processCommandLine;
 
 if (require.main === module) {
-    processCommandLine();
+    void processCommandLine();
 }

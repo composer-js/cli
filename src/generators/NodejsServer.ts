@@ -1,23 +1,20 @@
 ﻿///////////////////////////////////////////////////////////////////////////////
-// Copyright (C) 2019 AcceleratXR, Inc. All rights reserved.
+// Copyright (C) Xsolla (USA), Inc. All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
 import { StringUtils } from "@composer-js/core";
 import BaseGenerator from "../BaseGenerator";
+import * as path from "path";
 
 /**
  * Code generator for NodeJS Server projects.
  */
-export default class NodejsServerGenerator extends BaseGenerator {
+export default class NodejsServer extends BaseGenerator {
     constructor(logger: any) {
         super(logger);
     }
 
-    public get language(): string {
-        return "nodejs";
-    }
-
-    public get type(): string {
-        return "server";
+    public get templatePath(): string {
+        return path.resolve(path.join(__dirname, "..", "..", "templates", "nodejs", "server"));
     }
 
     protected convertDataType(type: string, format: string, name: string): string | undefined {

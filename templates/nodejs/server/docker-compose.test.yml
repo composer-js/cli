@@ -1,0 +1,29 @@
+services:
+    server:
+        build:
+            context: .
+            secrets:
+                - YARN_TOKEN
+        ports:
+            - "3000:3000"
+            - "9229:9229"
+        environment:
+            - NPM_TOKEN
+            - datastores__acl__url=mongodb://mongo
+            - datastores__cache__url=redis://redis
+            - datastores__events__url=redis://redis
+            - datastores__logs__url=redis://redis
+            - datastores__proxy__url=mongodb://redis
+            - datastores__user__url=mongodb://mongo
+            - NODE_ENV=dev
+            - safe_mode=true
+        links:
+            - redis
+            - mongo
+    mongo:
+        image: "${CI_DOCKER_REGISTRY_MIRROR:-}mongo"
+    redis:
+        image: "${CI_DOCKER_REGISTRY_MIRROR:-}redis"
+secrets:
+    YARN_TOKEN:
+        environment: NPM_TOKEN

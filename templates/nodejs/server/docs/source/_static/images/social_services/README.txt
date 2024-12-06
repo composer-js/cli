@@ -1,0 +1,1 @@
+Any images in this dir ( _static/images/{repo_name}/ ) will be pulled into the main docs and minimized on sphinx-build.

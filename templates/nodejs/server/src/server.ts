@@ -3,56 +3,54 @@
 // Copyright (C) {{year}} {{copyright}}
 ///////////////////////////////////////////////////////////////////////////////
 import config from "./config";
-import { Logger, OASUtils } from "@composer-js/core";
-import { BackgroundServiceManager, Server } from "@composer-js/service-core";
-
-import * as commandLineArgs from "command-line-args";
+import { JWTUtils, EventUtils, Logger } from "@composer-js/core";
+import { ObjectFactory, Server } from "@composer-js/service-core";
 import * as fs from "fs";
+import { readFile } from "fs/promises";
 import * as process from "process";
 import * as os from "os";
 
 const logger = Logger();
 
-// Parse the CLI options
-const cliDefinitions: commandLineArgs.OptionDefinition[] = [];
-const cliOptions = commandLineArgs(cliDefinitions);
-let server: Server | undefined = undefined;
-let bgManager: BackgroundServiceManager | undefined = undefined;
+const objectFactory = new ObjectFactory(config, logger);
+let server: any = undefined;
 
-const start = async function(config: any, logger: any) {
-    // Load the OpenAPI specification file
-    let apiSpec = undefined;
+const start = async function (config: any, logger: any) {
+    // Load the release notes file
+    let releaseNotes: string | undefined = undefined;
     try {
-        apiSpec = fs.existsSync("openapi.json")
-            ? await OASUtils.loadSpec("openapi.json")
-            : await OASUtils.loadSpec("openapi.yaml");
-        if (!apiSpec) {
-            throw new Error("Failed to load OpenAPI specification.");
+        if (fs.existsSync(`${__dirname}/../RELEASE_NOTES.rst`)) {
+            releaseNotes = await readFile(`${__dirname}/../RELEASE_NOTES.rst`, { encoding: "utf-8" });
         }
     } catch (err) {
-        logger.warn("No OpenAPI specification file found. Automatic service discovery may be broken.");
-        logger.warn("Generate a new OpenAPI specification file using the --genspec flag.");
-        logger.info(err);
+        logger.debug(err);
     }
 
-    // Create and start the server
-    server = new Server(config, apiSpec, __dirname, logger);
-    await server.start();
+    // Initialize EventUtils to be able to send out telemetry events
+    const auth: any = config.get("auth");
+    delete auth.options.expiresIn;
+    const token: string = JWTUtils.createToken(auth,
+        {
+            uid: `${config.get("service_name")}-${os.hostname()}`,
+            name: `${config.get("service_name")}-${os.hostname()}`,
+            roles: config.get("trusted_roles"),
+        });
+    EventUtils.init(config, logger, token);
 
-    // Start all background services
-    bgManager = new BackgroundServiceManager(__dirname, config, logger);
-    await bgManager.startAll();
+    // Create and start the server
+    server = new Server(config, __dirname, logger, objectFactory, releaseNotes);
+    await server.start();
 };
 
-start(config, logger);
+void start(config, logger);
 
 process.on("SIGINT", async () => {
     logger.info("Shutting down...");
-    if (bgManager) {
-        bgManager.stopAll();
-    }
     if (server) {
         await server.stop();
+    }
+    if (objectFactory) {
+        await objectFactory.destroy();
     }
     process.exit(0);
 });

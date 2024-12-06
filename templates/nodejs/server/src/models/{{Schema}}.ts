@@ -1,12 +1,20 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright (C) {{year}} {{{copyright}}}
 ///////////////////////////////////////////////////////////////////////////////
-import { Column, Entity, Index, Unique } from "typeorm";
-import { {{#if baseClass}}{{baseClass}}, {{/if}}{{#if cached}}Cache, {{/if}}Identifier{{#if trackChanges}}, TrackChanges{{/if}} } from "@composer-js/service-core";
+import { Column, Entity, Index } from "typeorm";
+import { {{#if this["x-baseClass"]}}{{this["x-baseClass"]}}, DocDecorators, ModelDecorators } from "@composer-js/service-core";
+const { Description } = DocDecorators;
+const {
+    {{/if}}{{#if this["x-cached"]}}Cache,{{/if}}
+    DataStore,
+    Identifier,
+    {{#if this["x-shard"]}}Shard,{{/if}}
+    {{#if this["x-versioned"]}}TrackChanges,{{/if}}
+} = ModelDecorators;
 {{#each dependencies}}
 import {{this}} from "./{{this}}";
 {{/each}}
-{{#each members}}
+{{#each properties}}
 {{#if (eq this.type "enum")}}
 
 /**
@@ -26,16 +34,13 @@ export enum {{{Schema}}}{{{this.Name}}} {
  * @author {{{author}}}
  */
 @Entity()
-{{#if cached}}@Cache({{#if (not cached true)}}{{cached}}{{/if}}){{/if}}
-{{#if trackChanges}}@TrackChanges({{#if (not trackChanges true)}}{{trackChanges}}{{/if}}){{/if}}
-{{#unless isNone}}
-@Unique(["uid"{{#each members}}{{#if this.identifier}}, "{{{this.name}}}"{{/if}}{{/each}}])
-{{/unless}}
-export default class {{{Schema}}}{{#if baseClass}} extends {{baseClass}}{{/if}} {
-{{#each members}}
-    /**
-     * {{{this.description}}}
-     */
+{{#if this["x-cached"]}}@Cache({{#if (not this["x-cached"] true)}}{{this["x-cached"]}}{{/if}}){{/if}}
+@DataStore("{{this["x-datastore"]}}")
+{{#if this["x-versioned"]}}@TrackChanges({{#if (not this["x-versioned"] true)}}{{this["x-versioned"]}}{{/if}}){{/if}}
+{{#if this["x-shard"]}}@Shard({{#if (not this["x-shard"] true)}}{{this["x-shard"]}}{{/if}}){{/if}}
+export default class {{{Schema}}}{{#if this["x-baseClass"]}} extends {{this["x-baseClass"]}}{{/if}} {
+{{#each properties}}
+    @Description("{{{this.description}}}")
     {{#if this.identifier}}
     @Identifier
     @Index()
@@ -50,8 +55,8 @@ export default class {{{Schema}}}{{#if baseClass}} extends {{baseClass}}{{/if}} 
         
         {{/if}}
         if (other) {
-        {{#each members}}
-            this.{{{this.name}}} = other.{{{this.name}}} !== undefined ? other.{{{this.name}}} : this.{{{this.name}}};
+        {{#each properties}}
+            this.{{{this.name}}} = "{{{this.name}}}" in other ? other.{{{this.name}}} : this.{{{this.name}}};
         {{/each}}
         }
     }
