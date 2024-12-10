@@ -1,8 +1,8 @@
 ==========================
-{{service_title}}
+{{info.title}}
 ==========================
 
-A service that provides social features to users including a social profile, online presence, friends list, blocked players list and player-to-player messaging.
+Add a description for your project here.
 
 ## Getting Started
 

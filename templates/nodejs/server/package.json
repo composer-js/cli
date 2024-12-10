@@ -1,10 +1,10 @@
 {
-    "name": "{{project_name}}",
-    "version": "{{project_version}}",
-    "description": "{{project_description}}",
-    "author": "{{author}}",
-    "repository": "{{repository}}",
-    "license": "{{license}}",
+    "name": "{{info.name}}",
+    "version": "{{info.version}}",
+    "description": "",
+    "repository": "{{{info.repository}}}",
+    "license": "",
+    "author": "{{{info.author}}}",
     "files": [
         "dist"
     ],

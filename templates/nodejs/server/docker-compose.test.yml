@@ -14,9 +14,11 @@ services:
             - datastores__events__url=redis://redis
             - datastores__logs__url=redis://redis
             - datastores__proxy__url=mongodb://redis
-            - datastores__user__url=mongodb://mongo
             - NODE_ENV=dev
             - safe_mode=true
+            {{#each datastores}}
+            - datastores__{{this.name}}__url={{this.type}}://{{this.name}}
+            {{/each}}
         links:
             - redis
             - mongo
