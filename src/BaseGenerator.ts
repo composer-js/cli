@@ -63,8 +63,8 @@ abstract class BaseGenerator implements Generator {
         if (spec?.components?.schemas) {
             for (const schemaName in spec.components.schemas) {
                 const schema = spec.components.schemas[schemaName];
-                if (schema["x-datastore"]) {
-                    const name = schema["x-datastore"];
+                if (schema["datastore"]) {
+                    const name = schema["datastore"];
                     const def = OASUtils.getDatastore(spec, name);
                     if (def) {
                         result.datastores[name] = def;
@@ -108,8 +108,8 @@ abstract class BaseGenerator implements Generator {
             // Go through each path definition in the spec and generate a template info block for each endpoint
             for (let path in spec.paths) {
                 const def = spec.paths[path];
-                const schemaName = def["x-schema"] ? def["x-schema"] : undefined;
-                const name = def["x-name"] && def["x-name"] !== "_a" ? def["x-name"] : schemaName ? schemaName : "Global";
+                const schemaName = def["schema"] ? def["schema"] : undefined;
+                const name = def["name"] && def["name"] !== "_a" ? def["name"] : schemaName ? schemaName : "Global";
 
                 // Create the initial object that will contain all route info
                 if (!result[name]) {
@@ -126,9 +126,7 @@ abstract class BaseGenerator implements Generator {
                     if (schemaName) {
                         result[name].Schema = StringUtils.toPascalCase(schemaName);
                         result[name].schema = StringUtils.toCamelCase(schemaName);
-                 
                         result[name].SCHEMA = schemaName.toLocaleUpperCase();
-                        result[name].properties = this.generateSchemaProperties(spec, schemaName);
                     }
                 }
 
@@ -144,7 +142,7 @@ abstract class BaseGenerator implements Generator {
                     const route = def[method];
 
                     // If 'x-upgrade' is set then the method is overridden to WebSocket.
-                    if (route["x-upgrade"])
+                    if (route["upgrade"])
                     {
                         method = "WebSocket";
                     }
@@ -186,16 +184,16 @@ abstract class BaseGenerator implements Generator {
                     }
 
                     result[name].routes.push({
-                        after: JSON.stringify(route["x-after"]),
-                        before: JSON.stringify(route["x-before"]),
+                        after: JSON.stringify(route["after"]),
+                        before: JSON.stringify(route["before"]),
                         description: route.description,
                         hasQuery: route.parameters !== undefined,
                         method: StringUtils.toCamelCase(method),
                         Method: StringUtils.toPascalCase(method),
                         METHOD: method.toUpperCase(),
-                        name: route["x-name"] ? StringUtils.toCamelCase(route["x-name"]) : undefined,
-                        Name: route["x-name"] ? StringUtils.toPascalCase(route["x-name"]) : undefined,
-                        NAME: route["x-name"] ? route["x-name"].toUpperCase() : undefined,
+                        name: route["name"] ? StringUtils.toCamelCase(route["name"]) : undefined,
+                        Name: route["name"] ? StringUtils.toPascalCase(route["name"]) : undefined,
+                        NAME: route["name"] ? route["name"].toUpperCase() : undefined,
                         params,
                         path: subpath,
                         requestType: requestTypeInfo ? requestTypeInfo.type : undefined,
@@ -233,14 +231,14 @@ abstract class BaseGenerator implements Generator {
      * 
      * @param {object} spec The OpenAPI specification to reference.
      * @param {string} schemaName The name of the schema to generate properties from.
-     * @returns {any[]} A list of all properties and their associated template replacement values.
+     * @returns {any} A dictionary of all properties and their associated template replacement values.
      */
-    protected generateSchemaProperties(spec: any, schemaName: string): any[] {
-        const result: any[] = [];
+    protected generateSchemaProperties(spec: any, schemaName: string): any {
+        const result: any = {};
 
         const schema: any = OASUtils.getSchema(spec, schemaName);
         if (schema) {
-            const baseClass: string = StringUtils.toPascalCase(schema["x-baseClass"] ? schema["x-baseClass"] : "None");
+            const baseClass: string = StringUtils.toPascalCase(schema["baseClass"] ? schema["baseClass"] : "None");
 
             for (const memberName in schema.properties) {
                 const memberDef: any = schema.properties[memberName];
@@ -268,6 +266,9 @@ abstract class BaseGenerator implements Generator {
                     memberDef.Name = StringUtils.toPascalCase(memberName);
                     memberDef.name = StringUtils.toCamelCase(memberName);
                     memberDef.NAME = memberName.toLocaleUpperCase();
+                    memberDef.subtype = typeInfo.subType;
+                    memberDef.type = typeInfo.type;
+                    memberDef.values = typeInfo.values;
 
                     const subSchemaName = typeInfo.subSchemaRef ? path.basename(typeInfo.subSchemaRef) : null;
                     if (subSchemaName) {
@@ -276,7 +277,7 @@ abstract class BaseGenerator implements Generator {
                         memberDef.SUBSCHEMA = subSchemaName.toLocaleUpperCase();
                     }
 
-                    result.push(memberDef);
+                    result[memberName] = memberDef;
                 } else {
                     throw new Error("Unable to convert type: schema:" + schemaName + ", property:" + memberName);
                 }
@@ -293,8 +294,7 @@ abstract class BaseGenerator implements Generator {
      * @param spec The OpenAPI specification to generate schemas for.
      */
     protected generateSchemas(spec: any) {
-        const result: any = Object.assign({
-        }, spec?.components?.schemas);
+        const result: any = Object.assign({}, spec?.components?.schemas);
 
         for (const schemaName in result) {
             const schema = result[schemaName];
@@ -303,6 +303,7 @@ abstract class BaseGenerator implements Generator {
             schema.SCHEMA = schemaName.toLocaleUpperCase();
             schema.properties = this.generateSchemaProperties(spec, schemaName);
             schema.dependencies = this.getSchemaDependencies(spec, schemaName);
+            schema._processed = true;
         }
 
         return result;
@@ -376,7 +377,7 @@ abstract class BaseGenerator implements Generator {
                         const schema = vars.components.schemas[key];
 
                         // When the schema has the x-ignore flag we don't generate code for it.
-                        if (schema["x-ignore"]) {
+                        if (schema["ignore"]) {
                             continue;
                         }
                         
@@ -452,16 +453,20 @@ abstract class BaseGenerator implements Generator {
      * @param vars The template variables to use during file processing.
      */
     protected async processTemplate(templatePath: string, destPath: string, vars: any): Promise<void> {
-        let srcFile: string = fs.readFileSync(templatePath, { encoding: "utf-8" });
-        if (srcFile) {
-            const finalDestPath: string = StringUtils.findAndReplace(destPath, vars);
-            const template: any = handlebars.compile(srcFile);
-            
-            // Now write the final output to the destination
-            let output = template(vars);
-            await FileUtils.writeFile(templatePath, finalDestPath, output, true);
-        } else {
-            throw new Error("Failed to find template: " + templatePath);
+        try {
+            let srcFile: string = fs.readFileSync(templatePath, { encoding: "utf-8" });
+            if (srcFile) {
+                const finalDestPath: string = StringUtils.findAndReplace(destPath, vars);
+                const template: any = handlebars.compile(srcFile);
+                
+                // Now write the final output to the destination
+                let output = template(vars);
+                await FileUtils.writeFile(templatePath, finalDestPath, output, true);
+            } else {
+                throw new Error("Failed to find template: " + templatePath);
+            }
+        } catch (err) {
+            throw err;
         }
     }
 
@@ -487,6 +492,8 @@ abstract class BaseGenerator implements Generator {
             routes: {}
         };
 
+        this.normalizeSpecExt(apiSpec);
+
         // First generate all template variables that will be used during code generation
         const vars: any = this.createGlobalVars(apiSpec);
         vars.components.schemas = this.generateSchemas(apiSpec);
@@ -497,6 +504,24 @@ abstract class BaseGenerator implements Generator {
 
         // Finally copy all additional files to the destination
         // TODO
+    }
+
+    /**
+     * Normalizes all spec extensions (keys starting with `x-`).
+     * 
+     * @param spec The spec to normalize
+     */
+    private normalizeSpecExt(spec: any): void {
+        for (const key in spec) {
+            if (typeof spec[key] === "object") {
+                this.normalizeSpecExt(spec[key]);
+            }
+
+            if (key.startsWith("x-")) {
+                spec[key.substring(2)] = spec[key];
+                delete spec[key];
+            }
+        }
     }
 }
 

@@ -69,31 +69,33 @@ export default class NodejsServer extends BaseGenerator {
     }
 
     protected getDefaultValue(type: any, format: string, subtype?: any): any {
-        let result: any = "";
+        let result: any = "undefined";
 
-        if (type.match("Array.*")) {
-            result = "[]";
-        }
-        else if (type.match("boolean")) {
-            result = false;
-        }
-        else if (type.match("Buffer")) {
-            result = "new Buffer()";
-        }
-        else if (type.match("Date")) {
-            result = "new Date()";
-        }
-        else if (type.match("number")) {
-            result = 0;
-        }
-        else if (type.match("string")) {
-            result = '""';
-        }
-        else if (type.match("any")) {
-            result = "undefined";
-        }
-        else {
-            result = `new ${StringUtils.toPascalCase(type)}()`;
+        if (typeof type === "string") {
+            if (type.match("Array.*")) {
+                result = "[]";
+            }
+            else if (type.match("boolean")) {
+                result = false;
+            }
+            else if (type.match("Buffer")) {
+                result = "new Buffer()";
+            }
+            else if (type.match("Date")) {
+                result = "new Date()";
+            }
+            else if (type.match("number")) {
+                result = 0;
+            }
+            else if (type.match("string")) {
+                result = '""';
+            }
+            else if (type.match("any")) {
+                result = "undefined";
+            }
+            else {
+                result = `new ${StringUtils.toPascalCase(type)}()`;
+            }
         }
 
         return result;

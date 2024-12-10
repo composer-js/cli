@@ -2,18 +2,21 @@
 // Copyright (C) {{year}} {{{copyright}}}
 ///////////////////////////////////////////////////////////////////////////////
 import { Column, Entity, Index } from "typeorm";
-import { {{#if this["x-baseClass"]}}{{this["x-baseClass"]}}, DocDecorators, ModelDecorators } from "@composer-js/service-core";
-const { Description } = DocDecorators;
-const {
-    {{/if}}{{#if this["x-cached"]}}Cache,{{/if}}
-    DataStore,
-    Identifier,
-    {{#if this["x-shard"]}}Shard,{{/if}}
-    {{#if this["x-versioned"]}}TrackChanges,{{/if}}
-} = ModelDecorators;
+import { {{#if baseClass}}{{baseClass}}{{/if}}, DocDecorators, ModelDecorators } from "@composer-js/service-core";
+import { ObjectDecorators, ValidationUtils } from "@composer-js/core";
 {{#each dependencies}}
 import {{this}} from "./{{this}}";
 {{/each}}
+const { Description } = DocDecorators;
+const {
+    {{#if cached}}Cache,{{/if}}
+    DataStore,
+    Identifier,
+    {{#if shard}}Shard,{{/if}}
+    {{#if versioned}}TrackChanges,{{/if}}
+} = ModelDecorators;
+const { Nullable, Validator } = ObjectDecorators;
+
 {{#each properties}}
 {{#if (eq this.type "enum")}}
 
@@ -28,36 +31,48 @@ export enum {{{Schema}}}{{{this.Name}}} {
 {{/if}}
 {{/each}}
 
+{{#if (or author description)}}
 /**
  * {{{description}}}
  *
  * @author {{{author}}}
  */
+{{/if}}
 @Entity()
-{{#if this["x-cached"]}}@Cache({{#if (not this["x-cached"] true)}}{{this["x-cached"]}}{{/if}}){{/if}}
-@DataStore("{{this["x-datastore"]}}")
-{{#if this["x-versioned"]}}@TrackChanges({{#if (not this["x-versioned"] true)}}{{this["x-versioned"]}}{{/if}}){{/if}}
-{{#if this["x-shard"]}}@Shard({{#if (not this["x-shard"] true)}}{{this["x-shard"]}}{{/if}}){{/if}}
-export default class {{{Schema}}}{{#if this["x-baseClass"]}} extends {{this["x-baseClass"]}}{{/if}} {
+{{#if cached}}@Cache({{#if (not cached true)}}{{cached}}{{/if}}){{/if}}
+@DataStore("{{datastore}}")
+{{#if versioned}}@TrackChanges({{#if (not versioned true)}}{{versioned}}{{/if}}){{/if}}
+{{#if shard}}@Shard({{#if (not shard true)}}{{shard}}{{/if}}){{/if}}
+export default class {{{Schema}}}{{#if baseClass}} extends {{baseClass}}{{/if}} {
 {{#each properties}}
-    @Description("{{{this.description}}}")
-    {{#if this.identifier}}
+{{#if this.description}}
+    @Description(`
+        {{{this.description}}}
+    `)
+{{/if}}
+{{#if this.identifier}}
     @Identifier
     @Index()
-    {{/if}}
+{{/if}}
     @Column()
-    public {{{this.name}}}: {{#if (eq this.type "enum")}}{{{Schema}}}{{{this.Name}}} = {{{Schema}}}{{{this.Name}}}.{{{this.defaultValue}}}{{else}}{{{this.type}}}{{#if nullable}} | undefined{{/if}} = {{#if nullable}}undefined{{else}}{{{this.defaultValue}}}{{/if}}{{/if}};
+{{#if nullable}}
+    @Nullable
+{{/if}}
+{{#if validator}}
+    @Validator({{{validator}}})
+{{/if}}
+    public {{{this.name}}}{{#if nullable}}?{{/if}}: {{#if (eq this.type "enum")}}{{{Schema}}}{{{this.Name}}}{{else}}{{{this.type}}}{{/if}}{{#if (not nullable)}} = {{#if (eq this.type "enum")}}{{{Schema}}}{{{this.Name}}}.{{/if}}{{{this.defaultValue}}}{{/if}};
 
 {{/each}}
     constructor(other?: any) {
-        {{#if baseClass}}
+{{#if baseClass}}
         super(other);
         
-        {{/if}}
+{{/if}}
         if (other) {
-        {{#each properties}}
+{{#each properties}}
             this.{{{this.name}}} = "{{{this.name}}}" in other ? other.{{{this.name}}} : this.{{{this.name}}};
-        {{/each}}
+{{/each}}
         }
     }
 }
