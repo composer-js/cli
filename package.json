@@ -21,6 +21,7 @@
         "precommit": "lint-staged",
         "test:prod": "npm run lint && npm run test -- --coverage --no-cache",
         "postversion": "git push && git push --tags",
+        "dev": "ts-node src/cli.ts",
         "run": "node dist/lib/cli.js"
     },
     "dependencies": {

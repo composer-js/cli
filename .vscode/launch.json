@@ -5,20 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug Program",
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
-            "program": "${workspaceFolder}\\dist\\cli.js",
-            "args": [
-                "-i",
-                "./test/petstore.yaml",
-                "-o",
-                "./test/nodejs_server_petstore",
-                "-t",
-                "server",
-                "-l",
-                "nodejs"
-            ]
+            "args": ["src/cli.ts"],
+            "runtimeArgs": ["-r", "ts-node/register"],
+            "cwd": "${workspaceFolder}",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
