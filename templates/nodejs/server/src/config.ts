@@ -19,10 +19,8 @@ conf.defaults({
     datastores: {
         acl: {
             type: "mongodb",
-            url: "mongodb://localhost",
+            host: "localhost",
             database: "acl",
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             synchronize: true,
         },
         cache: {
@@ -32,12 +30,9 @@ conf.defaults({
     {{#each datastores}}
         {{this.name}}: {
             type: "{{this.type}}",
-            url: "{{this.url}}",
+            host: "localhost",
             database: "{{service_name}}",
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             synchronize: true,
-            entities: [{{#each ../schemas}}{{#if (eq this.datastore ../name) }}"{{this.Schema}}",{{/if}}{{/each}}]
         },
     {{/each}}
     },
@@ -46,20 +41,14 @@ conf.defaults({
     // Settings pertaining to the signing and verification of authentication tokens
     auth: {
         // The default PassportJS authentication strategy to use
-        strategy: "JWTStrategy",
-        // The password to be used when verifying authentication tokens
-        password: "MyPasswordIsSecure",
+        strategy: "passportjs.AXRStrategy",
+        // The password to be used when signing and verifying authentication tokens
+        secret: "MyPasswordIsSecure",
         options: {
             // "algorithm": "HS256",
-            expiresIn: "7 days",
+            expiresIn: "1 hour",
             audience: "mydomain.com",
             issuer: "api.mydomain.com",
-        },
-    },
-    jobs: {
-        defaultSchedule: "* * * * * *",
-        MetricsCollector: {
-            schedule: "*/5 * * * * *",
         },
     },
     session: {

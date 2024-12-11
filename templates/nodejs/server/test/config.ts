@@ -19,18 +19,16 @@ conf.defaults({
     datastores: {
         acl: {
             type: "mongodb",
-            url: "mongodb://localhost:9999",
-            database: "axr-test",
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+            host: "localhost",
+            database: "acl",
+            synchronize: true,
         },
     {{#each datastores}}
         {{this.name}}: {
             type: "{{this.type}}",
-            url: "{{this.url}}",
-            database: "axr-test",
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+            host: "localhost",
+            database: "{{service_name}}",
+            synchronize: true,
         },
     {{/each}}
     },
