@@ -1,7 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright (C) {{year}} {{copyright}}
 ///////////////////////////////////////////////////////////////////////////////
-import { BackgroundService, ObjectDecorators } from "@composer-js/service-core";
+import { ObjectDecorators } from "@composer-js/core";
+import { BackgroundService } from "@composer-js/service-core";
 const { Init } = ObjectDecorators;
 
 /**
@@ -15,6 +16,10 @@ export default class MetricsCollector extends BackgroundService {
         super(config, logger);
     }
 
+    public get schedule(): string | undefined {
+        return "* * * *";
+    }
+
     @Init
     public init() {
         // TODO
@@ -24,7 +29,7 @@ export default class MetricsCollector extends BackgroundService {
         // TODO
     }
 
-    public async start(): Promise<void> {}
+    public async start(): Promise<void> {} // eslint-disable-line typescript/no-empty-function
 
-    public async stop(): Promise<void> {}
+    public async stop(): Promise<void> {} // eslint-disable-line typescript/no-empty-function
 }

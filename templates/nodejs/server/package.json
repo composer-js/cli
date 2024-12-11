@@ -34,6 +34,7 @@
     "dependencies": {
         "@composer-js/core": "^6.0.0-rc.12",
         "@composer-js/service-core": "^8.0.0-rc.13",
+        "@types/express": "^5.0.0",
         "@types/node": "^22.8.4",
         "axios": "^1.7.7",
         "connect-redis": "^7.1.1",
@@ -88,7 +89,7 @@
         "axios": "^1.7.7",
         "express": "^4.21.0"
     },
-    "packageManager": "yarn@4.2.2",
+    "packageManager": "yarn@4.5.3",
     "engines": {
         "node": ">=20.0.0"
     }

@@ -50,7 +50,7 @@ conf.defaults({
         // The password to be used when verifying authentication tokens
         password: "MyPasswordIsSecure",
         options: {
-            //"algorithm": "HS256",
+            // "algorithm": "HS256",
             expiresIn: "7 days",
             audience: "mydomain.com",
             issuer: "api.mydomain.com",
